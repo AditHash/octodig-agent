@@ -12,6 +12,8 @@ This file defines repository-wide conventions for humans, coding assistants, and
 - **docs/FRAMEWORK_CHOICES.md:** framework boundaries and when a custom LangGraph graph is justified.
 - **examples/README.md:** small runnable educational samples, not production services.
 - **docs/SECURITY.md:** mandatory safeguards for internet and LLM content.
+- **MODEL_BENCHMARK.md:** OpenAI/Gemini benchmark policy and reproducibility.
+- **docs/A2A_PROTOCOL.md:** rationale for deferring A2A and future adoption conditions.
 
 Read these before significant edits. Do not claim a planned feature is implemented without adding the code and tests.
 
@@ -24,9 +26,11 @@ Read these before significant edits. Do not claim a planned feature is implement
 5. Preserve evidence provenance (source URL, retrieved/published timestamps where known, supported claim, and evidence classification).
 6. Do not let agents freely modify database records; validate structured outputs through application services first.
 7. Implement real spending controls for paid tools, model calls, elapsed time, and research iterations.
-8. Favor provider-neutral interfaces without hiding provider-specific billing or search semantics.
+8. **Support OpenAI GPT and Google Gemini using LangChain's common model interface.** Keep provider-native search, citations, usage/price accounting, retries and provider-specific options explicit in adapters; swapping model strings is not sufficient for equivalent behavior.
 9. Separate verified findings, reasonable inference, and unverified sales hypotheses.
 10. All twelve report sections are always present with explicit completion status, never filled with invented facts.
+11. In V0/V1 use local Deep Agents `subagents=` for specialist delegation, even across GPT/Gemini. **Do not add A2A services or SDKs** without an approved architecture decision showing a concrete cross-process/cross-framework need.
+12. Separate **model-only** comparisons with shared evidence/tools from **provider-ecosystem** comparisons with native web search. Never report benchmark scores without recording model ID, prompt, source set, tool version and provider-reported usage.
 
 ## When implementing functionality
 

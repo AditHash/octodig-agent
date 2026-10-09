@@ -10,6 +10,35 @@
 
 See [FRAMEWORK_CHOICES.md](FRAMEWORK_CHOICES.md) and [examples/README.md](../examples/README.md) for runnable building blocks.
 
+## Provider-agnostic inference
+
+Model selection and research orchestration are separate concerns. LangChain's `init_chat_model` can select OpenAI GPT or Google Gemini via a provider-prefixed model ID. The research and final report contracts should not branch on model vendor. Provider adapters handle credentials, native/third-party search capabilities, citation grounding, token-usage metadata and cost accounting. Mixed-model specialists are possible but **not automatic**, and should be decided after measured comparison.
+
+~~~text
+Company research request
+          |
+          v
+Shared research prompts + report contract
+          |
+          v
+Deep Agents + LangChain tool interfaces
+          |
+          v
+Configured model (GPT / Gemini)
+          |
+          v
+Provider-specific search / citation adapter (when needed)
+          |
+          v
+Evidence store + deterministic twelve-section validation
+~~~
+
+Use separate benchmarks for identical provided evidence, a shared search backend, and provider-native web search. See [../MODEL_BENCHMARK.md](../MODEL_BENCHMARK.md).
+
+## A2A is an extension, not a prerequisite
+
+In-process specialist tasks use Deep Agents' built-in delegation. Using GPT and Gemini in the **same Python service** requires no Agent2Agent (A2A) protocol. A2A becomes interesting when one specialist is independently deployed, owned, permissioned or implemented in another framework. When that need is established, add an adapter translating internal task/result types to the protocol's agent discovery, remote tasks, and artifacts. Do not expose an A2A server by default. See [A2A_PROTOCOL.md](A2A_PROTOCOL.md).
+
 ## Main components
 
 ~~~text

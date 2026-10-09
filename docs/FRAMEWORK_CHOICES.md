@@ -14,12 +14,19 @@
 
 Deep Agents' `create_deep_agent(...)` builds an agent that runs on LangGraph via LangChain's agent foundation. We do **not** need to assemble a `StateGraph` merely to get a functioning Deep Agent.
 
+## Model providers and interoperability
+
+LangChain standardizes core calls such as `invoke`, streaming, tool interfaces and structured-output APIs across supported integrations. It does **not** make vendor-native search tools, citation metadata, reasoning costs or all model capabilities identical. OctoDig will compare OpenAI GPT with Gemini and document differences through explicit adapters and benchmarks.
+
+A2A addresses communication **between independent agents/services**; it is not necessary for Deep Agents' in-process subagents, even when specialists use different model providers. Defer it until an independently deployable agent creates a concrete interoperability requirement. See [../MODEL_BENCHMARK.md](../MODEL_BENCHMARK.md) and [A2A_PROTOCOL.md](A2A_PROTOCOL.md).
+
 ## Examples in this repository
 
 - [01_langchain_tools.py](../examples/01_langchain_tools.py) — simple LangChain agent with a local, bounded tool.
 - [02_deep_research.py](../examples/02_deep_research.py) — Deep Agent with OpenAI hosted web search; a **research experiment**, not verified production output.
 - [03_subagents.py](../examples/03_subagents.py) — Deep Agents lead with specialized subagents using `subagents=`.
 - [04_validate_report.py](../examples/04_validate_report.py) — no-LLM Pydantic validation for the mandatory twelve-section minimum.
+- [05_compare_providers.py](../examples/05_compare_providers.py) — OpenAI/Gemini model calls against the **same fictional context**, with no web search; prints usage and timing.
 
 Examples use the **same underlying runtime** without writing a manual graph. The models may or may not delegate to a subagent on a given run; delegation is a model choice.
 

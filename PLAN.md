@@ -21,7 +21,9 @@ A research run:
 - [x] Freeze the twelve-section minimum output contract.
 - [ ] Choose 3–5 representative company test fixtures, including a sparse-information company and an ambiguous name.
 - [ ] Create a test seller-offering catalog and expected evidence examples.
-- [ ] Choose initial API providers/models based on tool support, quality, and measured cost, not price alone.
+- [ ] Choose initial GPT and Gemini candidate models based on tool support, quality, availability, and measured costs, not price alone.
+- [x] Document the distinction between shared-input model comparison and native-search agent comparison.
+- [x] Reserve A2A for later interoperability rather than early in-process delegation.
 
 **Exit criteria:** shared schemas and reproducible quality checks; no assumptions about an already implemented backend.
 
@@ -32,10 +34,23 @@ A research run:
 - [x] Demonstrate a single Deep Agent with OpenAI hosted web search.
 - [x] Demonstrate declarative subagent delegation without a custom StateGraph.
 - [x] Demonstrate deterministic Pydantic validation of all twelve report section keys.
-- [ ] Run an API-backed research benchmark and capture actual cost/latency.
+- [x] Add a provider-agnostic model initialization and offline-fixture comparison example (not an executed benchmark).
+- [ ] Run **real** GPT and Gemini API-backed comparison and record usage, cost/latency and answer quality.
+- [ ] Add equivalent search-tool comparison and provider-native web-search tracks.
 - [ ] Convert learning snippets into independently tested production modules.
 
 **Note:** These examples are teaching aids, **not** the application or a fully validated research pipeline. Follow [examples/README.md](examples/README.md).
+
+## Model portability milestones
+
+- [ ] Load OpenAI and Gemini models through a typed provider/model registry and LangChain standard interfaces.
+- [ ] Keep provider-specific search grounding, citations and billing parsing behind explicit adapters.
+- [ ] Benchmark **common evidence** (same supplied documents, prompts, schemas; no search) first.
+- [ ] Benchmark **common retrieval** (same provider-neutral search service and source corpus) after that.
+- [ ] Benchmark **native search** (provider-specific grounding), clearly identifying it as end-to-end system comparison rather than model-only comparison.
+- [ ] Decide model assignment per specialist only after measured quality, cost, and latency.
+
+Track methodology in [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md).
 
 ## Phase 1 — Runnable CLI research POC
 
@@ -93,6 +108,16 @@ A research run:
 - [ ] Benchmark standard vs deep modes and document trade-offs.
 - [ ] Add CI, security checks, deployment templates, monitoring, and backup procedures.
 - [ ] Evaluate a web UI and integrations only after the core contract is stable.
+
+## Phase 6 — Optional A2A interoperability spike (not committed to product)
+
+- [ ] Confirm a real need for an agent running as an **independent service** or using a different framework.
+- [ ] Prototype an authenticated A2A endpoint for exactly one specialist in an isolated branch.
+- [ ] Map internal ResearchTask/ResearchResult contracts to versioned A2A messages/artifacts.
+- [ ] Measure task latency, network errors, operational overhead and security implications against local `subagents=`.
+- [ ] Keep A2A only if it delivers enough interoperability or independently scalable capability to justify complexity.
+
+**Do not** introduce the A2A SDK, a second service or inter-agent networking during V0/V1. See [docs/A2A_PROTOCOL.md](docs/A2A_PROTOCOL.md).
 
 ## Framework decision rule
 

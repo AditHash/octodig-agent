@@ -61,14 +61,15 @@ This is **hybrid agentic orchestration**: agents choose research directions and 
 - **Start now:** Python, LangChain, Deep Agents, Pydantic
 - **Already underneath:** LangGraph runtime, used internally by agents
 - **Later as needed:** FastAPI and an explicit custom LangGraph workflow
-- Configurable OpenAI / Gemini integrations
+- **Provider-agnostic models:** OpenAI GPT and Google Gemini via LangChain `init_chat_model` (provider-native search remains separate)
+- Benchmark both providers before choosing a default model or specialist assignments
 - PostgreSQL and pgvector (later milestone)
 - LangSmith for optional tracing and evaluations
 - Server-Sent Events for progress streaming
 
 ## Try the learning examples
 
-These are **small experiments**, not a full research product. OpenAI examples use paid model requests; web search may add charges.
+These are **small experiments**, not a full research product. Examples 01–03 make OpenAI API requests; example 05 can call **both** OpenAI and Gemini. Paid calls may incur charges, with additional web-search fees for examples 02–03.
 
 ~~~bash
 uv sync
@@ -77,6 +78,7 @@ uv run python examples/01_langchain_tools.py
 uv run python examples/02_deep_research.py "Microsoft"
 uv run python examples/03_subagents.py "Microsoft"
 uv run python examples/04_validate_report.py
+uv run python examples/05_compare_providers.py --provider both
 uv run pytest
 ~~~
 
@@ -85,6 +87,14 @@ On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`. See [e
 ### Why all three frameworks?
 
 **LangChain** supplies models, tool interfaces and baseline agents. **Deep Agents** supplies a research harness, planning/context management and optional subagent delegation; it already runs on the **LangGraph runtime**. We will **not** write our own `StateGraph` in V0 solely for appearances. Add a custom outer LangGraph when explicit multi-stage state transitions, deterministic recovery/branching, and checkpoint boundaries are genuinely needed. Read [framework choices](docs/FRAMEWORK_CHOICES.md).
+
+## Latest architecture decisions
+
+- **GPT and Gemini:** keep prompts, agent logic, report schema and reusable tools provider-neutral. Use a provider adapter for authentication, capabilities, native search, citation metadata, token reporting and costs. Compare identical-input baselines **separately** from native-search end-to-end benchmarks.
+- **A2A:** do **not** add Agent2Agent in V0/V1. Native Deep Agents subagents work inside the Python service even when using different model providers. Consider A2A only after an independently deployable agent or cross-framework integration is useful.
+- **MCP:** optional tool connectivity; not the same concern as A2A agent-to-agent communication.
+
+Read [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md) and [docs/A2A_PROTOCOL.md](docs/A2A_PROTOCOL.md).
 
 ## Documentation
 
@@ -98,6 +108,8 @@ On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`. See [e
 - [API specification](docs/API.md)
 - [Security and evidence policy](docs/SECURITY.md)
 - [Evaluation plan](docs/EVALUATION.md)
+- [GPT vs Gemini benchmark plan](MODEL_BENCHMARK.md)
+- [A2A protocol adoption decision](docs/A2A_PROTOCOL.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Guiding principles

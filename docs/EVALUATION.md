@@ -4,6 +4,13 @@
 
 Research quality must be measured independently of how polished its prose looks. We will benchmark both **single-agent Deep Research** and **hybrid specialist research** rather than assuming either design is better.
 
+## Two independent provider comparison questions
+
+1. **Model comparison:** with identical supplied evidence or a shared search provider, how do GPT and Gemini perform on the same prompts and twelve-section contract?
+2. **End-to-end provider comparison:** with each vendor's native web search/grounding, which complete stack provides better trustworthy research per unit of time and cost? Search implementations are not controlled in this track.
+
+Do **not** conflate these comparisons, or treat token counts from different tokenizers as directly equivalent dollar costs. The detailed protocol lives in [../MODEL_BENCHMARK.md](../MODEL_BENCHMARK.md).
+
 ## Benchmark dataset
 
 Create representative target-company fixtures:
