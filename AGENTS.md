@@ -11,6 +11,8 @@ This file defines repository-wide conventions for humans, coding assistants, and
 - **docs/ARCHITECTURE.md:** planned agent/workflow boundaries.
 - **docs/FRAMEWORK_CHOICES.md:** framework boundaries and when a custom LangGraph graph is justified.
 - **examples/README.md:** small runnable educational samples, not production services.
+- **frontend/AGENTS.md:** OctoDig frontend guidance and usage of provided UI reference files.
+- **frontend/README.md:** UI reference index and their scope.
 - **docs/SECURITY.md:** mandatory safeguards for internet and LLM content.
 - **MODEL_BENCHMARK.md:** OpenAI/Gemini benchmark policy and reproducibility.
 - **docs/A2A_PROTOCOL.md:** rationale for deferring A2A and future adoption conditions.
