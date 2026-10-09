@@ -1,0 +1,22 @@
+[project]
+name = "octodig-agent"
+version = "0.0.0"
+description = "OctoDig research-agent learning examples (application not implemented yet)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "deepagents>=0.7",
+  "langchain>=1.0",
+  "langchain-openai>=1.0",
+  "pydantic>=2.0",
+  "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

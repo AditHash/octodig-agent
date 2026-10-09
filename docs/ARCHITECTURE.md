@@ -2,6 +2,14 @@
 
 **Design:** hybrid agentic intelligence with deterministic control boundaries.
 
+## Framework strategy: start simple
+
+**Phase 1:** use LangChain for model/tool/agent interfaces and **Deep Agents** for the lead researcher, web research, context management, and optional declarative subagents. Deep Agents is **already implemented using LangChain agents on LangGraph's runtime**. We do **not** need to author a separate `StateGraph` to use it.
+
+**Phase 2+ (conditional):** introduce an explicit outer LangGraph workflow **only if** concrete needs arise for deterministic cross-stage transitions, persistent checkpoints, independently retryable verification, bounded branching, or interruption/resumption. A custom graph should not duplicate the work of the Deep Agents harness. Application code must enforce reporting and security contracts in either design.
+
+See [FRAMEWORK_CHOICES.md](FRAMEWORK_CHOICES.md) and [examples/README.md](../examples/README.md) for runnable building blocks.
+
 ## Main components
 
 ~~~text
@@ -11,7 +19,9 @@ Caller / future UI
 FastAPI API: validation, auth, run orchestration, progress SSE
       |
       v
-Durable job executor + LangGraph workflow
+Deep Agents + LangChain tools (initial)
+      |
+      +--> optional custom LangGraph stages (later, if needed)
       |
       +--> Identity resolution / research planning
       |
@@ -38,7 +48,7 @@ Object/artifact storage (optional large reports)
 
 ## Separation of responsibilities
 
-**LangGraph:** explicit state transitions, dependencies, bounded loops, retry boundaries, checkpointing where configured, and deterministic completion gates.
+**LangGraph:** the runtime already used by Deep Agents and LangChain agents. A **custom** LangGraph graph is a later option for explicit state transitions, independently retryable stages, bounded branching, and checkpointing where configured.
 
 **Deep Agents:** open-ended planning, tool selection, targeted web research, scratch/workspace management, and delegation to specialist tasks.
 
@@ -59,7 +69,9 @@ The lead agent may choose additional research, but cannot skip required output c
 
 These responsibilities may be grouped or split in implementation. Do not equate "six responsibilities" with "six LLMs".
 
-## Suggested graph
+## Suggested later-stage graph (not V0)
+
+This diagram illustrates when an **outer** graph might become valuable; it is not an implementation requirement for the first agent.
 
 ~~~text
 Resolve company -> Plan -> Gather (parallel) -> Normalize/verify

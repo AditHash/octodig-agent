@@ -25,9 +25,21 @@ A research run:
 
 **Exit criteria:** shared schemas and reproducible quality checks; no assumptions about an already implemented backend.
 
+## Phase 0.5 — Learning examples (available now)
+
+- [x] Add a uv-managed Python environment and placeholder configuration.
+- [x] Demonstrate a LangChain agent with a local catalog tool.
+- [x] Demonstrate a single Deep Agent with OpenAI hosted web search.
+- [x] Demonstrate declarative subagent delegation without a custom StateGraph.
+- [x] Demonstrate deterministic Pydantic validation of all twelve report section keys.
+- [ ] Run an API-backed research benchmark and capture actual cost/latency.
+- [ ] Convert learning snippets into independently tested production modules.
+
+**Note:** These examples are teaching aids, **not** the application or a fully validated research pipeline. Follow [examples/README.md](examples/README.md).
+
 ## Phase 1 — Runnable CLI research POC
 
-- [ ] Initialize a Python project with uv and environment-based settings.
+- [ ] Initialize the actual application package, CLI, and environment-based settings (example-only uv scaffolding already exists).
 - [ ] Create a single Deep Agent with a narrowly scoped research prompt and approved search tools.
 - [ ] Accept company name, optional official website, seller offerings, and research depth.
 - [ ] Capture provider citation annotations and original source metadata.
@@ -40,7 +52,8 @@ A research run:
 
 ## Phase 2 — Hybrid multi-agent intelligence
 
-- [ ] Introduce LangGraph's explicit workflow state and bounded transitions.
+- [ ] First use native Deep Agents `subagents=` delegation; establish when delegation improves research quality or efficiency.
+- [ ] **Only if needed**, introduce a custom LangGraph `StateGraph` for deterministic stages, durable replay, checkpointed branching or recovery; document the concrete requirement.
 - [ ] Add specialist research tasks for company/market, people/signals, and technology.
 - [ ] Permit parallel independent research; merge normalized findings via a shared evidence store.
 - [ ] Add verification of source reachability, relevance, recency, contradictions, and claim support.
@@ -80,6 +93,10 @@ A research run:
 - [ ] Benchmark standard vs deep modes and document trade-offs.
 - [ ] Add CI, security checks, deployment templates, monitoring, and backup procedures.
 - [ ] Evaluate a web UI and integrations only after the core contract is stable.
+
+## Framework decision rule
+
+LangChain supplies tool and model integrations; Deep Agents runs autonomous research and delegation, already backed by LangGraph. A separate hand-written LangGraph graph is **not part of V0**. Before adding one, document the workflow behavior missing from a normal Deep Agent plus application-layer validation. See [docs/FRAMEWORK_CHOICES.md](docs/FRAMEWORK_CHOICES.md).
 
 ## Research modes
 

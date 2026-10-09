@@ -2,7 +2,7 @@
 
 **OctoDig** is a planned open-source **agentic business-intelligence and B2B research platform**. The name reflects an octopus gathering information from many directions: multiple specialized agents investigate an account, reconcile evidence, and help a seller understand where a genuine opportunity may exist.
 
-> **Current status: documentation / design phase.** No working OctoDig application is included in this repository yet. Features, architecture, and API routes described here are targets, not implemented capabilities.
+> **Current status: documentation and runnable learning examples.** The `examples/` directory contains small experiments, not a deployed OctoDig application. Agentic research orchestration, APIs, persistent jobs, and evidence-backed production reports remain planned.
 
 OctoDig is the new Python-based successor concept to SalesDig V2. V3 is a **separate repository and new implementation**, not a direct rewrite of the existing Node.js app.
 
@@ -35,10 +35,7 @@ See [the report contract](docs/REPORT_CONTRACT.md) for the evidence model and se
 Client / CLI
     |
     v
-FastAPI: request validation, research jobs, status, SSE
-    |
-    v
-LangGraph: durable and bounded research lifecycle
+Initially: LangChain tools + Deep Agents (built on LangGraph)
     |
     +-- Deep Agents lead researcher: planning, delegation, gap analysis
     |       +-- Company & market research
@@ -51,19 +48,43 @@ LangGraph: durable and bounded research lifecycle
     +-- Report assembly
     |
     v
-Persistence: PostgreSQL, pgvector, reports, run events
+Pydantic report validation and local artifacts
+
+Later: FastAPI + durable jobs + optional custom LangGraph
+       workflow + PostgreSQL/pgvector + SSE
 ~~~
 
 This is **hybrid agentic orchestration**: agents choose research directions and delegate subtasks; application code still enforces identity, evidence schemas, permissions, budget limits, and report completeness. Not every box is a separate agent.
 
 ## Intended stack
 
-- Python, FastAPI, Pydantic
-- LangChain, LangGraph, Deep Agents
+- **Start now:** Python, LangChain, Deep Agents, Pydantic
+- **Already underneath:** LangGraph runtime, used internally by agents
+- **Later as needed:** FastAPI and an explicit custom LangGraph workflow
 - Configurable OpenAI / Gemini integrations
 - PostgreSQL and pgvector (later milestone)
 - LangSmith for optional tracing and evaluations
 - Server-Sent Events for progress streaming
+
+## Try the learning examples
+
+These are **small experiments**, not a full research product. OpenAI examples use paid model requests; web search may add charges.
+
+~~~bash
+uv sync
+cp .env.example .env  # fill in OPENAI_API_KEY locally; never commit .env
+uv run python examples/01_langchain_tools.py
+uv run python examples/02_deep_research.py "Microsoft"
+uv run python examples/03_subagents.py "Microsoft"
+uv run python examples/04_validate_report.py
+uv run pytest
+~~~
+
+On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`. See [examples/README.md](examples/README.md) for what each example demonstrates and safety limits.
+
+### Why all three frameworks?
+
+**LangChain** supplies models, tool interfaces and baseline agents. **Deep Agents** supplies a research harness, planning/context management and optional subagent delegation; it already runs on the **LangGraph runtime**. We will **not** write our own `StateGraph` in V0 solely for appearances. Add a custom outer LangGraph when explicit multi-stage state transitions, deterministic recovery/branching, and checkpoint boundaries are genuinely needed. Read [framework choices](docs/FRAMEWORK_CHOICES.md).
 
 ## Documentation
 
@@ -71,6 +92,8 @@ This is **hybrid agentic orchestration**: agents choose research directions and 
 - [AGENTS.md](AGENTS.md) — instructions for contributors and coding agents
 - [Product requirements](docs/PRD.md)
 - [System architecture](docs/ARCHITECTURE.md)
+- [Framework choices](docs/FRAMEWORK_CHOICES.md)
+- [Runnable examples](examples/README.md)
 - [Research output contract](docs/REPORT_CONTRACT.md)
 - [API specification](docs/API.md)
 - [Security and evidence policy](docs/SECURITY.md)
@@ -88,4 +111,4 @@ This is **hybrid agentic orchestration**: agents choose research directions and 
 
 ## Status and getting started
 
-Start with [PLAN.md](PLAN.md). There are currently no installation or run commands because the implementation has not been added. Never commit credentials or customer-sensitive datasets.
+Start with [PLAN.md](PLAN.md), then run the [examples](examples/README.md). The examples do not prove the twelve-section report is evidence-verified or production-ready. Never commit credentials or customer-sensitive datasets.
