@@ -31,6 +31,11 @@ LangChain standardizes invocation, agent and tool interfaces, but provider-nativ
 
 Select at least five companies spanning rich documentation, modest public footprint, sparse information, ambiguous names, and recent news. Add a controlled fictional fixture for low-cost first-pass regression testing.
 
+The committed [benchmark fixtures](fixtures/benchmark/README.md) provide this
+initial set and its fictional seller catalog. They are prompt inputs only:
+live-source evidence, snapshots, usage, quality reviews, and billed costs must
+be recorded for every real run rather than copied into the fixture files.
+
 Score the **same 12 sections** required by [docs/REPORT_CONTRACT.md](docs/REPORT_CONTRACT.md). Clearly distinguish factual evidence, inference, hypothesis and `not_found` outcomes. Any opportunity must map to a known seller offering; otherwise it is an unmatched suggestion.
 
 ## Measures per model/run

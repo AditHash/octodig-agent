@@ -1,0 +1,66 @@
+{
+  "fixture_version": "0.1",
+  "purpose": "Stable benchmark inputs only. These records are research prompts, not verified company facts or cached evidence.",
+  "fixtures": [
+    {
+      "id": "microsoft-rich-public",
+      "company_name": "Microsoft Corporation",
+      "official_website": "https://www.microsoft.com",
+      "geography": "United States",
+      "fixture_kind": "live_public",
+      "coverage_profile": "rich_public",
+      "research_focus": "Large public company with broad primary-source coverage.",
+      "expected_evidence_types": ["official corporate pages", "investor relations", "careers", "dated newsroom posts"],
+      "allowed_offering_ids": ["data-platform-modernization", "customer-service-automation"],
+      "evaluation_notes": ["Resolve the supplied canonical website.", "Do not treat search snippets as verified evidence."]
+    },
+    {
+      "id": "formlabs-medium-public",
+      "company_name": "Formlabs",
+      "official_website": "https://formlabs.com",
+      "geography": "United States",
+      "fixture_kind": "live_public",
+      "coverage_profile": "medium_public",
+      "research_focus": "Company with product and careers material but less public disclosure than a listed enterprise.",
+      "expected_evidence_types": ["official product pages", "careers", "dated announcements"],
+      "allowed_offering_ids": ["field-service-optimization", "data-platform-modernization"],
+      "evaluation_notes": ["Mark revenue, private technology choices, and unavailable leadership information as unknown."]
+    },
+    {
+      "id": "northstar-ambiguous-name",
+      "company_name": "Northstar",
+      "official_website": null,
+      "geography": "United States",
+      "fixture_kind": "identity_ambiguity",
+      "coverage_profile": "ambiguous",
+      "research_focus": "Ambiguous company name; identity resolution must precede factual research.",
+      "expected_evidence_types": ["candidate official websites", "business registry or reputable directory results"],
+      "allowed_offering_ids": [],
+      "evaluation_notes": ["Expected outcome may be identity_status=ambiguous.", "Do not merge evidence from different Northstar entities."]
+    },
+    {
+      "id": "mossy-ridge-sparse-controlled",
+      "company_name": "Mossy Ridge Tool Library",
+      "official_website": "https://example.invalid/mossy-ridge-tool-library",
+      "geography": "United States",
+      "fixture_kind": "controlled_fictional",
+      "coverage_profile": "sparse",
+      "research_focus": "Deliberately sparse controlled fixture for honest not-found and insufficient-evidence behavior.",
+      "expected_evidence_types": [],
+      "allowed_offering_ids": [],
+      "evaluation_notes": ["No network lookup is expected for this fictional target.", "All twelve sections must still appear with explicit gaps."]
+    },
+    {
+      "id": "figma-recent-change",
+      "company_name": "Figma",
+      "official_website": "https://www.figma.com",
+      "geography": "United States",
+      "fixture_kind": "live_public",
+      "coverage_profile": "recent_change",
+      "research_focus": "Time-sensitive product or leadership research; capture publication and retrieval dates.",
+      "expected_evidence_types": ["official newsroom", "official leadership pages", "dated product announcements"],
+      "allowed_offering_ids": ["product-analytics-foundation", "customer-service-automation"],
+      "evaluation_notes": ["State source dates and resolve contradictory or stale reports before marking claims verified."]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "catalog_version": "0.1",
+  "seller_name": "OctoDig fictional benchmark seller",
+  "offerings": [
+    {
+      "id": "data-platform-modernization",
+      "name": "Data platform modernization assessment",
+      "description": "Fixed-scope assessment of public data, analytics, and integration priorities.",
+      "eligible_signals": ["stated analytics initiative", "public integration complexity", "data platform modernization announcement"],
+      "discovery_questions": ["Which reporting or data-integration outcomes are currently hardest to achieve?"]
+    },
+    {
+      "id": "customer-service-automation",
+      "name": "Customer service workflow automation",
+      "description": "Design and implementation support for approved customer-service workflows.",
+      "eligible_signals": ["stated support-scale challenge", "customer portal expansion", "public service-experience priority"],
+      "discovery_questions": ["Which customer-service workflows create the most manual effort today?"]
+    },
+    {
+      "id": "field-service-optimization",
+      "name": "Field service optimization workshop",
+      "description": "Workshop for organizations with publicly evidenced field, maintenance, or equipment-service operations.",
+      "eligible_signals": ["public field-service operation", "maintenance workflow", "equipment fleet growth"],
+      "discovery_questions": ["Where do field teams lose time between scheduling, service, and follow-up?"]
+    },
+    {
+      "id": "product-analytics-foundation",
+      "name": "Product analytics foundation",
+      "description": "Discovery engagement for teams that publicly state a product-adoption or usage-insight goal.",
+      "eligible_signals": ["stated product adoption goal", "public product expansion", "usage-insight initiative"],
+      "discovery_questions": ["Which product-adoption questions cannot currently be answered with confidence?"]
+    }
+  ]
+}

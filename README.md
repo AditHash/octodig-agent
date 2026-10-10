@@ -2,7 +2,7 @@
 
 **OctoDig** is a planned open-source **agentic business-intelligence and B2B research platform**. The name reflects an octopus gathering information from many directions: multiple specialized agents investigate an account, reconcile evidence, and help a seller understand where a genuine opportunity may exist.
 
-> **Current status: documentation and runnable learning examples.** The `examples/` directory contains small experiments, not a deployed OctoDig application. Agentic research orchestration, APIs, persistent jobs, and evidence-backed production reports remain planned.
+> **Current status: hosted application foundation in progress.** The repository now contains a FastAPI API, React workspace shell, PostgreSQL-backed research queue, and Docker images for frontend/API/worker. Provider research orchestration, complete seller knowledge, reports, chat, and exports are being implemented incrementally. The `examples/` directory remains educational only.
 
 OctoDig is the new Python-based successor concept to SalesDig V2. V3 is a **separate repository and new implementation**, not a direct rewrite of the existing Node.js app.
 
@@ -124,3 +124,21 @@ Read [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md) and [docs/A2A_PROTOCOL.md](docs/A2
 ## Status and getting started
 
 Start with [PLAN.md](PLAN.md), then run the [examples](examples/README.md). The examples do not prove the twelve-section report is evidence-verified or production-ready. Never commit credentials or customer-sensitive datasets.
+
+## Application development
+
+OctoDig uses an external PostgreSQL database with the `pgvector` extension; the
+repository intentionally does not ship a database container. Copy `.env.example`
+to `.env`, set a real `DATABASE_URL` and `JWT_SECRET`, then apply migrations and
+start the API, worker, and frontend:
+
+~~~bash
+uv sync
+uv run alembic upgrade head
+uv run uvicorn octodig.api:app --reload
+uv run python -m octodig.worker
+cd frontend && npm install && npm run dev
+~~~
+
+For Docker deployment, provide the same external database values in `.env` and
+run `docker compose up --build`. This starts only frontend, API, and worker.

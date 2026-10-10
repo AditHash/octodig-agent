@@ -19,8 +19,8 @@ A research run:
 
 - [x] Establish project identity and first documentation.
 - [x] Freeze the twelve-section minimum output contract.
-- [ ] Choose 3–5 representative company test fixtures, including a sparse-information company and an ambiguous name.
-- [ ] Create a test seller-offering catalog and expected evidence examples.
+- [x] Choose 3–5 representative company test fixtures, including a sparse-information company and an ambiguous name.
+- [x] Create a test seller-offering catalog and expected evidence examples.
 - [ ] Choose initial GPT and Gemini candidate models based on tool support, quality, availability, and measured costs, not price alone.
 - [x] Document the distinction between shared-input model comparison and native-search agent comparison.
 - [x] Reserve A2A for later interoperability rather than early in-process delegation.
@@ -52,9 +52,9 @@ A research run:
 
 Track methodology in [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md).
 
-## Phase 1 — Runnable CLI research POC
+## Phase 1 — Hosted application foundation
 
-- [ ] Initialize the actual application package, CLI, and environment-based settings (example-only uv scaffolding already exists).
+- [x] Initialize the actual application package, environment-based settings, FastAPI transport, React workspace shell, and external-PostgreSQL deployment scaffolding.
 - [ ] Create a single Deep Agent with a narrowly scoped research prompt and approved search tools.
 - [ ] Accept company name, optional official website, seller offerings, and research depth.
 - [ ] Capture provider citation annotations and original source metadata.
