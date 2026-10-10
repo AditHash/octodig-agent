@@ -1,6 +1,8 @@
 # Research Report and Evidence Contract
 
-**Status:** conceptual v0 specification. Names and fields are design guidance for the first Pydantic models, not an existing API schema.
+**Status:** v0 contract implemented in `src/octodig/report_contract.py`. This
+document remains the external behavior specification; FastAPI report endpoints
+and database persistence are added incrementally around the same contract.
 
 ## Section coverage — required keys
 

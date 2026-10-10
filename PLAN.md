@@ -59,7 +59,7 @@ Track methodology in [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md).
 - [ ] Accept company name, optional official website, seller offerings, and research depth.
 - [ ] Capture provider citation annotations and original source metadata.
 - [ ] Store research findings separately from the final generated narrative.
-- [ ] Validate twelve section placeholders and explicit missing-data statuses.
+- [x] Validate twelve section placeholders and explicit missing-data statuses.
 - [ ] Stream progress/text locally and save Markdown + structured JSON.
 - [ ] Record timing, tool actions, input/output/reasoning tokens and estimated provider cost.
 
