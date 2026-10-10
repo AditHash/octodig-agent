@@ -122,3 +122,49 @@ class ResearchEvent(Base):
     event_type: Mapped[str] = mapped_column(String(80))
     data: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ResearchSource(Base):
+    __tablename__ = "research_sources"
+    __table_args__ = (UniqueConstraint("run_id", "canonical_url", name="uq_source_run_url"),)
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("target_accounts.id", ondelete="CASCADE"), index=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), index=True)
+    canonical_url: Mapped[str] = mapped_column(String(2048))
+    title: Mapped[str | None] = mapped_column(String(500))
+    publisher: Mapped[str | None] = mapped_column(String(300))
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    provider: Mapped[str] = mapped_column(String(64))
+    locator: Mapped[str | None] = mapped_column(Text)
+
+
+class ResearchClaim(Base):
+    __tablename__ = "research_claims"
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("target_accounts.id", ondelete="CASCADE"), index=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), index=True)
+    section: Mapped[str] = mapped_column(String(80))
+    statement: Mapped[str] = mapped_column(Text)
+    classification: Mapped[str] = mapped_column(String(32))
+    verification_status: Mapped[str] = mapped_column(String(32))
+    rationale: Mapped[str | None] = mapped_column(Text)
+
+
+class ClaimEvidence(Base):
+    __tablename__ = "claim_evidence"
+    claim_id: Mapped[str] = mapped_column(ForeignKey("research_claims.id", ondelete="CASCADE"), primary_key=True)
+    source_id: Mapped[str] = mapped_column(ForeignKey("research_sources.id", ondelete="CASCADE"), primary_key=True)
+
+
+class StoredReport(Timestamped, Base):
+    __tablename__ = "reports"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("target_accounts.id", ondelete="CASCADE"), index=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), unique=True, index=True)
+    schema_version: Mapped[str] = mapped_column(String(20))
+    payload: Mapped[dict] = mapped_column(JSON)
+    markdown: Mapped[str | None] = mapped_column(Text)

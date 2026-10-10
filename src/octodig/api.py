@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .db import get_session
-from .models import Membership, ResearchEvent, ResearchRun, RunStatus, SellerOffering, TargetAccount, User, Workspace, WorkspaceRole
+from .models import Membership, ResearchEvent, ResearchRun, RunStatus, SellerOffering, StoredReport, TargetAccount, User, Workspace, WorkspaceRole
 from .schemas import (
     LoginRequest,
     OfferingCreate,
@@ -231,3 +231,16 @@ def start_research(
     session.commit()
     session.refresh(run)
     return run
+
+
+@app.get("/api/v1/runs/{run_id}/report")
+def read_report(
+    run_id: str, user: User = Depends(current_user), session: Session = Depends(get_session)
+) -> dict:
+    membership = active_membership(user, session)
+    report = session.scalar(
+        select(StoredReport).where(StoredReport.run_id == run_id, StoredReport.workspace_id == membership.workspace_id)
+    )
+    if report is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    return report.payload
