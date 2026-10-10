@@ -13,9 +13,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .db import get_session
-from .models import Membership, ResearchEvent, ResearchRun, RunStatus, TargetAccount, User, Workspace, WorkspaceRole
+from .models import Membership, ResearchEvent, ResearchRun, RunStatus, SellerOffering, TargetAccount, User, Workspace, WorkspaceRole
 from .schemas import (
     LoginRequest,
+    OfferingCreate,
+    OfferingResponse,
     RegisterRequest,
     ResearchRunResponse,
     ResearchStartRequest,
@@ -146,6 +148,51 @@ def list_targets(
             select(TargetAccount)
             .where(TargetAccount.workspace_id == membership.workspace_id)
             .order_by(TargetAccount.created_at.desc())
+        )
+    )
+
+
+@app.post("/api/v1/offerings", response_model=OfferingResponse, status_code=status.HTTP_201_CREATED)
+def create_offering(
+    payload: OfferingCreate,
+    membership: Membership = Depends(require_write_membership),
+    session: Session = Depends(get_session),
+) -> SellerOffering:
+    base_slug = slugify(payload.name)
+    offering_slug = base_slug
+    suffix = 2
+    while session.scalar(
+        select(SellerOffering.id).where(
+            SellerOffering.workspace_id == membership.workspace_id, SellerOffering.slug == offering_slug
+        )
+    ):
+        offering_slug = f"{base_slug[:93]}-{suffix}"
+        suffix += 1
+    offering = SellerOffering(
+        workspace_id=membership.workspace_id,
+        slug=offering_slug,
+        name=payload.name.strip(),
+        description=payload.description.strip(),
+        capabilities=payload.capabilities,
+        business_outcomes=payload.business_outcomes,
+        approved=payload.approved,
+    )
+    session.add(offering)
+    session.commit()
+    session.refresh(offering)
+    return offering
+
+
+@app.get("/api/v1/offerings", response_model=list[OfferingResponse])
+def list_offerings(
+    user: User = Depends(current_user), session: Session = Depends(get_session)
+) -> list[SellerOffering]:
+    membership = active_membership(user, session)
+    return list(
+        session.scalars(
+            select(SellerOffering)
+            .where(SellerOffering.workspace_id == membership.workspace_id)
+            .order_by(SellerOffering.name)
         )
     )
 

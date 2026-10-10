@@ -17,8 +17,24 @@ depends_on = None
 
 
 def upgrade() -> None:
-    Base.metadata.create_all(bind=op.get_bind())
+    table_names = (
+        "users",
+        "workspaces",
+        "memberships",
+        "target_accounts",
+        "research_runs",
+        "research_events",
+    )
+    Base.metadata.create_all(bind=op.get_bind(), tables=[Base.metadata.tables[name] for name in table_names])
 
 
 def downgrade() -> None:
-    Base.metadata.drop_all(bind=op.get_bind())
+    table_names = (
+        "research_events",
+        "research_runs",
+        "target_accounts",
+        "memberships",
+        "workspaces",
+        "users",
+    )
+    Base.metadata.drop_all(bind=op.get_bind(), tables=[Base.metadata.tables[name] for name in table_names])

@@ -51,3 +51,23 @@ class ResearchRunResponse(BaseModel):
     status: str
     provider: str
     mode: str
+
+
+class OfferingCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=5000)
+    capabilities: list[str] = Field(default_factory=list, max_length=30)
+    business_outcomes: list[str] = Field(default_factory=list, max_length=30)
+    approved: bool = False
+
+
+class OfferingResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    slug: str
+    name: str
+    description: str
+    capabilities: list[str]
+    business_outcomes: list[str]
+    approved: bool
+    version: int

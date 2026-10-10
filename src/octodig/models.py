@@ -83,6 +83,20 @@ class TargetAccount(Timestamped, Base):
     tags: Mapped[list[str]] = mapped_column(JSON, default=list)
 
 
+class SellerOffering(Timestamped, Base):
+    __tablename__ = "seller_offerings"
+    __table_args__ = (UniqueConstraint("workspace_id", "slug", name="uq_offering_slug_workspace"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
+    slug: Mapped[str] = mapped_column(String(100))
+    name: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text)
+    capabilities: Mapped[list[str]] = mapped_column(JSON, default=list)
+    business_outcomes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    approved: Mapped[bool] = mapped_column(default=False, index=True)
+    version: Mapped[int] = mapped_column(default=1)
+
+
 class ResearchRun(Timestamped, Base):
     __tablename__ = "research_runs"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
