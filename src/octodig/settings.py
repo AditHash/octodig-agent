@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     cors_origins: list[AnyHttpUrl] = Field(default_factory=lambda: ["http://localhost:5173"])
     run_lease_seconds: int = Field(default=300, ge=30, le=3600)
     worker_poll_seconds: float = Field(default=2.0, ge=0.2, le=60)
+    openai_api_key: SecretStr | None = None
+    google_api_key: SecretStr | None = None
+    gpt_model: str = "openai:gpt-5-nano"
+    gemini_model: str = "gemini-2.5-flash-lite"
 
     @field_validator("cors_origins", mode="before")
     @classmethod
