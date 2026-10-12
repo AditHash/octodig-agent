@@ -50,8 +50,8 @@ export function createTarget(token: string, input: { name: string; website?: str
   return request<Target>("/api/v1/targets", { method: "POST", body: JSON.stringify(input) }, token);
 }
 
-export function startResearch(token: string, targetId: string, input: { provider: "openai" | "gemini"; mode: "standard" | "deep"; max_cost_usd: string }) {
-  return request<ResearchRun>(`/api/v1/targets/${targetId}/research`, { method: "POST", body: JSON.stringify(input) }, token);
+export function startResearch(token: string, targetId: string, input: { provider: "openai" | "gemini"; mode: "standard" | "deep"; max_cost_usd: string }, idempotencyKey: string) {
+  return request<ResearchRun>(`/api/v1/targets/${targetId}/research`, { method: "POST", body: JSON.stringify(input), headers: { "Idempotency-Key": idempotencyKey } }, token);
 }
 
 export function getResearchRun(token: string, runId: string) {
