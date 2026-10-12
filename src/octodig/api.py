@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import re
 import json
+import re
 import time
 from collections.abc import Generator
+from datetime import UTC, datetime
 
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Query, status
@@ -42,6 +43,10 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 bearer = HTTPBearer(auto_error=False)
+
+
+def time_now_utc() -> datetime:
+    return datetime.now(UTC)
 
 
 def slugify(value: str) -> str:
@@ -249,6 +254,25 @@ def read_run_status(
     run_id: str, user: User = Depends(current_user), session: Session = Depends(get_session)
 ) -> ResearchRun:
     return _owned_run(session, run_id, active_membership(user, session).workspace_id)
+
+
+@app.post("/api/v1/runs/{run_id}/cancel", response_model=ResearchRunStatusResponse)
+def cancel_run(
+    run_id: str,
+    membership: Membership = Depends(require_write_membership),
+    session: Session = Depends(get_session),
+) -> ResearchRun:
+    run = _owned_run(session, run_id, membership.workspace_id)
+    if run.status == RunStatus.QUEUED:
+        run.status = RunStatus.CANCELLED
+        run.ended_at = time_now_utc()
+        session.add(ResearchEvent(run_id=run.id, event_type="run.cancelled", data={"before_start": True}))
+    elif run.status in {RunStatus.RESEARCHING, RunStatus.NORMALIZING, RunStatus.MATCHING, RunStatus.RENDERING}:
+        run.status = RunStatus.CANCEL_REQUESTED
+        session.add(ResearchEvent(run_id=run.id, event_type="run.cancel_requested", data={}))
+    session.commit()
+    session.refresh(run)
+    return run
 
 
 def _sse(event: ResearchEvent) -> str:

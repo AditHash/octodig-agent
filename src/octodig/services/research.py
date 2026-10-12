@@ -110,8 +110,12 @@ def _gemini_report(run: ResearchRun, target: TargetAccount, offerings: list[Sell
 
 def execute_research(session, run: ResearchRun, target: TargetAccount) -> None:
     """Perform one bounded provider call and persist a validated report or partial outcome."""
-    started = datetime.now(UTC)
     try:
+        session.refresh(run)
+        if run.status == RunStatus.CANCEL_REQUESTED:
+            run.status = RunStatus.CANCELLED
+            session.add(ResearchEvent(run_id=run.id, event_type="run.cancelled", data={"before_provider_call": True}))
+            return
         reserved_cost = require_budget(run.max_cost_usd, _pricing(run.provider))
         session.add(ResearchEvent(run_id=run.id, event_type="budget.reserved", data={"usd": str(reserved_cost)}))
         offerings = list(session.scalars(select(SellerOffering).where(
@@ -122,6 +126,11 @@ def execute_research(session, run: ResearchRun, target: TargetAccount) -> None:
             if run.provider == "openai"
             else _gemini_report(run, target, offerings)
         )
+        session.refresh(run)
+        if run.status == RunStatus.CANCEL_REQUESTED:
+            run.status = RunStatus.CANCELLED
+            session.add(ResearchEvent(run_id=run.id, event_type="run.cancelled", data={"after_provider_call": True}))
+            return
         report.metadata.estimated_cost_usd = str(reserved_cost)
         save_report(session, run, report)
         run.status = RunStatus.COMPLETED if not report.gaps else RunStatus.COMPLETED_PARTIAL

@@ -47,6 +47,8 @@ class ResearchStartRequest(BaseModel):
 
 
 class ResearchRunResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     status: str
     provider: str
