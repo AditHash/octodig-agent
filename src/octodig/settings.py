@@ -3,7 +3,7 @@
 from functools import lru_cache
 from decimal import Decimal
 
-from pydantic import AnyHttpUrl, Field, SecretStr, field_validator
+from pydantic import AnyHttpUrl, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = "postgresql+psycopg://octodig:octodig@localhost:5432/octodig"
+    environment: str = "development"
     jwt_secret: SecretStr = SecretStr("development-only-change-me")
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = Field(default=60, ge=5, le=1440)
@@ -38,6 +39,16 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
+
+    @model_validator(mode="after")
+    def validate_production_safety(self) -> "Settings":
+        if self.environment.lower() != "production":
+            return self
+        if self.jwt_secret.get_secret_value() == "development-only-change-me":
+            raise ValueError("JWT_SECRET must be configured for production")
+        if any(origin.host in {"localhost", "127.0.0.1"} for origin in self.cors_origins):
+            raise ValueError("OCTODIG_CORS_ORIGINS must not include local origins in production")
+        return self
 
 
 @lru_cache

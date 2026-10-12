@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 
 from octodig.api import app, database_ready, slugify
@@ -52,3 +53,17 @@ def test_research_requires_positive_cost_cap() -> None:
 def test_explicit_state_and_role_contracts() -> None:
     assert RunStatus.COMPLETED_PARTIAL == "completed_partial"
     assert WorkspaceRole.VIEWER == "viewer"
+
+
+def test_production_settings_reject_unsafe_defaults() -> None:
+    with pytest.raises(ValueError, match="JWT_SECRET"):
+        Settings(environment="production")
+
+
+def test_production_settings_accept_secure_secret_and_origin() -> None:
+    settings = Settings(
+        environment="production",
+        jwt_secret="a-long-non-default-secret",
+        cors_origins=["https://app.example.com"],
+    )
+    assert settings.environment == "production"
