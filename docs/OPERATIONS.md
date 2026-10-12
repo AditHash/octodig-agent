@@ -54,6 +54,14 @@ Compose network. The frontend binds to `127.0.0.1:8080`; put an HTTPS ingress in
 front of that address and configure the public HTTPS origin in
 `OCTODIG_CORS_ORIGINS`. Set a random JWT secret of at least 32 bytes.
 
+Request-limit defaults are 60 login attempts per minute per client/account, 10
+registrations per hour per client and 20 new research submissions per minute per
+workspace. Set `OCTODIG_AUTH_LOGIN_PER_MINUTE`, `OCTODIG_AUTH_REGISTER_PER_HOUR`
+and `OCTODIG_RESEARCH_SUBMISSIONS_PER_MINUTE` for the deployment. Monitor 429s and
+configure upstream abuse controls. A JWT-key rotation also resets opaque quota
+identities and invalidates existing access tokens. Migration 0006 creates the quota
+table; apply it before running this API/worker version.
+
 After a reviewed backup and maintenance decision, apply the schema with
 `docker compose --profile operations run --rm migrate`, then start API, worker and
 frontend with `docker compose up -d --build`. Migration is a separate operation;

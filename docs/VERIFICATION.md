@@ -4,7 +4,7 @@ This review verifies the current application foundation, not production readines
 
 ## Checks executed
 
-- 77 backend tests with the PostgreSQL suite enabled, including HTTP integration
+- 87 backend tests with the PostgreSQL suite enabled, including HTTP integration
   against both isolated SQLite and PostgreSQL: registration,
   login, authenticated targets and offerings, workspace isolation, idempotent run
   submission, cancellation, worker report persistence, JSON and Markdown retrieval.
@@ -82,7 +82,7 @@ Lease cancellation/exhaustion and preserved retry reservations have state transi
 tests. Real PostgreSQL tests additionally exercise lock contention and process death.
 Run `OCTODIG_TEST_DATABASE_URL=... uv run pytest` against a disposable database whose
 name ends in `_test`; each test owns a random schema and removes only that schema.
-Without this setting, the six PostgreSQL tests are skipped and SQLite HTTP tests run.
+Without this setting, the eight PostgreSQL tests are skipped and SQLite HTTP tests run.
 
 These checks found and corrected migration configuration ignoring the operator's
 database URL and nine missing evidence/report indexes (migration 0005).
@@ -91,3 +91,10 @@ Deployment adds non-root users, read-only runtime filesystems, private API netwo
 explicit migration operation, same-origin routing and allowlisted build contexts.
 Production readiness rejects an outdated schema; JWT validation requires expiry;
 production CORS origins require HTTPS. DB connection and pool waits are bounded.
+
+Request admission now uses atomic PostgreSQL counters shared across API processes.
+Tests cover concurrent limits, failed-password counting, ignored spoofed forwarded
+headers, registration throttling, idempotent research retries and scrubbed storage
+failure responses. Counter identities are HMAC digests and expired counters are
+removed by the worker. Fixed-window boundary bursts and upstream abuse protection
+are documented in [SECURITY.md](SECURITY.md).

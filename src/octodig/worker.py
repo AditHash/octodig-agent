@@ -10,6 +10,7 @@ from .models import TargetAccount
 from .services.jobs import claim_next_run, release_worker_lock
 from .services.research import execute_research
 from .settings import get_settings
+from .services.request_limits import expire_request_limits
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -18,10 +19,14 @@ logger = logging.getLogger(__name__)
 def run_forever() -> None:
     settings = get_settings()
     logger.info("OctoDig worker started")
+    last_cleanup = 0.0
     while True:
         try:
             # A dedicated connection retains the advisory lock across commits.
             with engine.connect() as connection, Session(bind=connection) as session:
+                if time.monotonic() - last_cleanup >= 60:
+                    expire_request_limits(session)
+                    last_cleanup = time.monotonic()
                 run = claim_next_run(session)
                 if run:
                     try:

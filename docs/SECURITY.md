@@ -47,6 +47,24 @@ OctoDig ingests untrusted public documents and may use paid model/search APIs. A
 
 Include targeted tests for private-IP and redirect rejections, injected "ignore prior instructions" content, conflicting evidence, runaway tool loops, cross-tenant report access, and leakage of secrets in SSE and logs.
 
+## Implemented request admission
+
+Login attempts are limited per client address and per account, registrations per
+client address, and new research submissions per workspace. PostgreSQL atomically
+arbitrates counters across API processes. Keys are HMAC digests; counters contain
+no raw email addresses or IPs. Attempts are committed before expensive work so
+failed passwords count too. Idempotent research retries reuse their original run
+without consuming another submission slot. Exhaustion returns 429 with Retry-After.
+
+Limits use fixed windows and can admit a double burst across a boundary. They do
+not replace upstream connection limits or distributed abuse protection. Configure
+trusted proxy IPs explicitly so ASGI sees the real client; arbitrary forwarded
+headers alone cannot change the rate-limit identity. Registration and login limits
+are operator settings. The worker removes expired counters once a minute.
+
+Unknown accounts undergo a dummy password check. Storage exceptions return a
+scrubbed 503 response with a retry hint; connection details and SQL are not returned.
+
 ## Reporting a vulnerability
 
 Before publishing a detailed exploit, notify repository maintainers privately using an appropriate GitHub security advisory/reporting channel if available. Do not open a public issue containing credentials, private customer data, or exploitable secrets.

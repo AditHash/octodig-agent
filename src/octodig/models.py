@@ -126,6 +126,14 @@ class ResearchEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class RequestQuota(Base):
+    """Shared attempt counters; opaque keys contain no raw IPs or email addresses."""
+    __tablename__ = "request_quotas"
+    bucket_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    attempts: Mapped[int] = mapped_column(default=1)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
 class ResearchSource(Base):
     __tablename__ = "research_sources"
     __table_args__ = (UniqueConstraint("run_id", "canonical_url", name="uq_source_run_url"),)

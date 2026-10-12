@@ -17,6 +17,8 @@ from octodig.report_contract import empty_report
 from octodig.services.budget import ProviderPricing
 from octodig.services.jobs import claim_next_run, release_worker_lock
 from octodig.services.research import ProviderResult, execute_research
+from octodig.services.request_limits import consume_request_limit
+from fastapi import HTTPException
 
 
 def seed(engine, count=1):
@@ -166,3 +168,21 @@ def test_production_readiness_accepts_migrated_database(postgres_engine, monkeyp
     monkeypatch.setattr("octodig.api.settings", SimpleNamespace(environment="production"))
     with Session(postgres_engine) as session:
         assert database_ready(session) is True
+
+
+def test_request_limits_are_atomic_across_api_process_connections(postgres_engine):
+    # Fixed time prevents a wall-clock window boundary making this test flaky.
+    now = datetime(2026, 10, 12, 12, 0, 1, tzinfo=UTC)
+
+    def attempt(_):
+        with Session(postgres_engine) as session:
+            try:
+                consume_request_limit(session, "test", "same-client", limit=3, window_seconds=60, now=now)
+                return True
+            except HTTPException as error:
+                assert error.status_code == 429
+                return False
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(attempt, range(12)))
+    assert sum(results) == 3

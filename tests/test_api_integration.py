@@ -21,6 +21,9 @@ from octodig.services.budget import ProviderPricing
 from octodig.services.jobs import claim_next_run
 from octodig.settings import Settings
 from decimal import Decimal
+from functools import partial
+from sqlalchemy.exc import SQLAlchemyError
+from octodig.services.request_limits import consume_request_limit
 
 
 @pytest.fixture(params=["sqlite"] + (["postgresql"] if os.environ.get("OCTODIG_TEST_DATABASE_URL") else []))
@@ -55,6 +58,12 @@ def register(client, email):
     })
     assert response.status_code == 201, response.text
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest.fixture
+def fixed_limit_clock(monkeypatch):
+    monkeypatch.setattr("octodig.api.consume_request_limit", partial(
+        consume_request_limit, now=datetime(2026, 10, 12, 12, 0, 1, tzinfo=UTC)))
 
 
 def test_authenticated_workflow_and_tenant_isolation(client):
@@ -180,3 +189,47 @@ def test_crash_reservations_prevent_retry_spending_full_budget(client, monkeypat
         session.commit()
         execute_research(session, run, session.get(TargetAccount, target_id))
         assert run.status == RunStatus.BUDGET_EXCEEDED
+
+
+def test_authentication_attempts_are_throttled_and_forwarded_headers_cannot_bypass(client, monkeypatch, fixed_limit_clock):
+    monkeypatch.setattr("octodig.api.settings", Settings(_env_file=None, auth_login_per_minute=2))
+    payload = {"email": "missing@example.com", "password": "wrong-password"}
+    for address in ("1.1.1.1", "8.8.8.8"):
+        assert client.post("/api/v1/auth/login", json=payload, headers={"X-Forwarded-For": address}).status_code == 401
+    blocked = client.post("/api/v1/auth/login", json=payload, headers={"X-Forwarded-For": "9.9.9.9"})
+    assert blocked.status_code == 429
+    assert int(blocked.headers["Retry-After"]) > 0
+
+
+def test_registration_attempts_are_bounded(client, monkeypatch, fixed_limit_clock):
+    monkeypatch.setattr("octodig.api.settings", Settings(_env_file=None, auth_register_per_hour=1))
+    register(client, "first-registration@example.com")
+    blocked = client.post("/api/v1/auth/register", json={
+        "email": "next-registration@example.com", "name": "Next", "workspace_name": "Next",
+        "password": "offline-password-long-enough",
+    })
+    assert blocked.status_code == 429
+
+
+def test_research_retry_does_not_consume_a_second_submission_slot(client, monkeypatch, fixed_limit_clock):
+    monkeypatch.setattr("octodig.api.settings", Settings(_env_file=None, research_submissions_per_minute=1))
+    headers = register(client, "limited-research@example.com")
+    target_id = client.post("/api/v1/targets", headers=headers, json={"name": "Example"}).json()["id"]
+    path = f"/api/v1/targets/{target_id}/research"
+    payload = {"provider": "openai", "max_cost_usd": "1"}
+    first_headers = {**headers, "Idempotency-Key": "first-action"}
+    first = client.post(path, headers=first_headers, json=payload)
+    assert first.status_code == 202
+    assert client.post(path, headers=first_headers, json=payload).json()["id"] == first.json()["id"]
+    assert client.post(path, headers={**headers, "Idempotency-Key": "second-action"}, json=payload).status_code == 429
+
+
+def test_storage_failure_response_does_not_expose_internal_details(client):
+    def broken_session():
+        raise SQLAlchemyError("private-connection-string-and-secret")
+        yield  # Dependency must retain its generator shape.
+    app.dependency_overrides[get_session] = broken_session
+    response = client.get("/api/v1/me", headers={"Authorization": "Bearer fixture"})
+    assert response.status_code == 503
+    assert response.headers["Retry-After"] == "5"
+    assert "private" not in response.text

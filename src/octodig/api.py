@@ -13,10 +13,10 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 
 import jwt
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
@@ -37,6 +37,7 @@ from .schemas import (
 )
 from .security import decode_access_token, hash_password, issue_access_token, verify_password
 from .settings import get_settings
+from .services.request_limits import consume_request_limit
 
 settings = get_settings()
 app = FastAPI(title="OctoDig API", version="0.1.0")
@@ -48,6 +49,18 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
 )
 bearer = HTTPBearer(auto_error=False)
+dummy_password_hash = hash_password("offline-timing-mitigation-password")
+
+
+@app.exception_handler(SQLAlchemyError)
+async def storage_unavailable(_request: Request, _error: SQLAlchemyError) -> JSONResponse:
+    return JSONResponse(status_code=503, content={"detail": "Storage temporarily unavailable. Try again later."},
+                        headers={"Retry-After": "5"})
+
+
+def client_address(request: Request) -> str:
+    # Only ASGI's client address is used. Arbitrary forwarded headers are ignored.
+    return request.client.host if request.client else "unknown"
 
 
 def time_now_utc() -> datetime:
@@ -124,7 +137,9 @@ def readiness(session: Session = Depends(get_session)) -> dict[str, str]:
 
 
 @app.post("/api/v1/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, session: Session = Depends(get_session)) -> TokenResponse:
+def register(payload: RegisterRequest, request: Request, session: Session = Depends(get_session)) -> TokenResponse:
+    consume_request_limit(session, "register-client", client_address(request),
+                          limit=settings.auth_register_per_hour, window_seconds=3600)
     if session.scalar(select(User).where(User.email == payload.email.lower())):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
     base_slug = slugify(payload.workspace_name)
@@ -136,16 +151,25 @@ def register(payload: RegisterRequest, session: Session = Depends(get_session)) 
     user = User(email=payload.email.lower(), name=payload.name.strip(), password_hash=hash_password(payload.password))
     workspace = Workspace(name=payload.workspace_name.strip(), slug=workspace_slug)
     session.add_all([user, workspace])
-    session.flush()
-    session.add(Membership(user_id=user.id, workspace_id=workspace.id, role=WorkspaceRole.OWNER))
-    session.commit()
+    try:
+        session.flush()
+        session.add(Membership(user_id=user.id, workspace_id=workspace.id, role=WorkspaceRole.OWNER))
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(status_code=409, detail="Registration details conflict. Please try again.")
     return TokenResponse(access_token=issue_access_token(user.id))
 
 
 @app.post("/api/v1/auth/login", response_model=TokenResponse)
-def login(payload: LoginRequest, session: Session = Depends(get_session)) -> TokenResponse:
+def login(payload: LoginRequest, request: Request, session: Session = Depends(get_session)) -> TokenResponse:
+    consume_request_limit(session, "login-client", client_address(request),
+                          limit=settings.auth_login_per_minute, window_seconds=60)
+    consume_request_limit(session, "login-account", payload.email.lower(),
+                          limit=settings.auth_login_per_minute, window_seconds=60)
     user = session.scalar(select(User).where(User.email == payload.email.lower()))
-    if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
+    password_valid = verify_password(payload.password, user.password_hash if user else dummy_password_hash)
+    if user is None or not user.is_active or not password_valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     return TokenResponse(access_token=issue_access_token(user.id))
 
@@ -272,6 +296,8 @@ def start_research(
     )
     if target is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target not found")
+    consume_request_limit(session, "research-workspace", membership.workspace_id,
+                          limit=settings.research_submissions_per_minute, window_seconds=60)
     run = ResearchRun(
         workspace_id=membership.workspace_id,
         account_id=target.id,
