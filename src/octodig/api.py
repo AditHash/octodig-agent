@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import re
+import json
+import time
 from collections.abc import Generator
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .db import get_session
+from .db import SessionLocal, get_session
 from .models import Membership, ResearchEvent, ResearchRun, RunStatus, SellerOffering, StoredReport, TargetAccount, User, Workspace, WorkspaceRole
 from .schemas import (
     LoginRequest,
@@ -20,6 +23,7 @@ from .schemas import (
     OfferingResponse,
     RegisterRequest,
     ResearchRunResponse,
+    ResearchRunStatusResponse,
     ResearchStartRequest,
     TargetCreate,
     TargetResponse,
@@ -231,6 +235,56 @@ def start_research(
     session.commit()
     session.refresh(run)
     return run
+
+
+def _owned_run(session: Session, run_id: str, workspace_id: str) -> ResearchRun:
+    run = session.scalar(select(ResearchRun).where(ResearchRun.id == run_id, ResearchRun.workspace_id == workspace_id))
+    if run is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Research run not found")
+    return run
+
+
+@app.get("/api/v1/runs/{run_id}", response_model=ResearchRunStatusResponse)
+def read_run_status(
+    run_id: str, user: User = Depends(current_user), session: Session = Depends(get_session)
+) -> ResearchRun:
+    return _owned_run(session, run_id, active_membership(user, session).workspace_id)
+
+
+def _sse(event: ResearchEvent) -> str:
+    return f"id: {event.id}\nevent: {event.event_type}\ndata: {json.dumps(event.data, separators=(',', ':'))}\n\n"
+
+
+@app.get("/api/v1/runs/{run_id}/events")
+def stream_run_events(
+    run_id: str,
+    after: str | None = Query(default=None, max_length=80),
+    user: User = Depends(current_user),
+    session: Session = Depends(get_session),
+) -> StreamingResponse:
+    workspace_id = active_membership(user, session).workspace_id
+    _owned_run(session, run_id, workspace_id)
+
+    def event_stream():
+        seen = after
+        for _ in range(30):
+            with SessionLocal() as event_session:
+                run = _owned_run(event_session, run_id, workspace_id)
+                events = list(event_session.scalars(
+                    select(ResearchEvent).where(ResearchEvent.run_id == run_id).order_by(ResearchEvent.created_at, ResearchEvent.id)
+                ))
+                if seen:
+                    indexes = [index for index, item in enumerate(events) if item.id == seen]
+                    events = events[indexes[-1] + 1:] if indexes else events
+                for event in events:
+                    seen = event.id
+                    yield _sse(event)
+                if run.status in {RunStatus.COMPLETED, RunStatus.COMPLETED_PARTIAL, RunStatus.FAILED, RunStatus.CANCELLED, RunStatus.BUDGET_EXCEEDED}:
+                    return
+            yield ": keepalive\n\n"
+            time.sleep(1)
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/v1/runs/{run_id}/report")

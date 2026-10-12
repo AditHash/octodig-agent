@@ -53,6 +53,12 @@ class ResearchRunResponse(BaseModel):
     mode: str
 
 
+class ResearchRunStatusResponse(ResearchRunResponse):
+    account_id: str
+    error_code: str | None
+    attempts: int
+
+
 class OfferingCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1, max_length=5000)
