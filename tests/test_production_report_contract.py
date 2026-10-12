@@ -40,3 +40,9 @@ def test_claim_source_and_section_links_are_validated() -> None:
     report.claims = [Claim(id="claim_1", section="company_overview", statement="Example is a company.", classification="verified", source_ids=["source_1"])]
     report.sections["company_overview"] = ReportSection(status="partial", claim_ids=["claim_1"])
     assert type(report).model_validate(report.model_dump()).claims[0].id == "claim_1"
+
+
+@pytest.mark.parametrize("url", ["http://example.com", "https://localhost/report", "https://127.0.0.1/report"])
+def test_source_rejects_unsafe_urls(url: str) -> None:
+    with pytest.raises(ValidationError):
+        Source(id="source_1", url=url, retrieved_at=datetime.now(UTC), provider="test")

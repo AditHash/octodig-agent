@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
+import ipaddress
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
@@ -57,6 +58,22 @@ class Source(BaseModel):
     retrieved_at: datetime
     provider: str = Field(min_length=1, max_length=64)
     locator: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("url")
+    @classmethod
+    def require_public_https_url(cls, value: HttpUrl) -> HttpUrl:
+        if value.scheme != "https":
+            raise ValueError("evidence sources must use HTTPS")
+        host = value.host
+        if host is None or host.lower() in {"localhost", "metadata.google.internal"}:
+            raise ValueError("evidence source host is not public")
+        try:
+            if not ipaddress.ip_address(host).is_global:
+                raise ValueError("evidence source host is not public")
+        except ValueError as exc:
+            if "not public" in str(exc):
+                raise
+        return value
 
 
 class Claim(BaseModel):
