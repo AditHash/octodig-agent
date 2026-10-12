@@ -13,7 +13,8 @@ from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .db import SessionLocal, get_session
@@ -88,7 +89,28 @@ def require_write_membership(
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    """Compatibility liveness endpoint for load balancers."""
     return {"status": "ok"}
+
+
+@app.get("/health/live")
+def liveness() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+def database_ready(session: Session) -> bool:
+    try:
+        session.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        return False
+    return True
+
+
+@app.get("/health/ready")
+def readiness(session: Session = Depends(get_session)) -> dict[str, str]:
+    if not database_ready(session):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database unavailable")
+    return {"status": "ready"}
 
 
 @app.post("/api/v1/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)

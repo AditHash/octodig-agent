@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from fastapi.testclient import TestClient
 
-from octodig.api import app, slugify
+from octodig.api import app, database_ready, slugify
 from octodig.models import RunStatus, WorkspaceRole
 from octodig.schemas import ResearchStartRequest
 from octodig.security import decode_access_token, hash_password, issue_access_token, verify_password
@@ -15,6 +15,19 @@ def test_health_endpoint() -> None:
     response = TestClient(app).get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_database_readiness_uses_a_minimal_query() -> None:
+    class Session:
+        def __init__(self) -> None:
+            self.statement = None
+
+        def execute(self, statement) -> None:
+            self.statement = statement
+
+    session = Session()
+    assert database_ready(session) is True
+    assert str(session.statement) == "SELECT 1"
 
 
 def test_password_and_token_helpers_round_trip(monkeypatch) -> None:

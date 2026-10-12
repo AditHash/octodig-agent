@@ -142,3 +142,7 @@ cd frontend && npm install && npm run dev
 
 For Docker deployment, provide the same external database values in `.env` and
 run `docker compose up --build`. This starts only frontend, API, and worker.
+
+Use `GET /health/live` for a process liveness probe and `GET /health/ready`
+for a database-aware readiness probe. The compatibility endpoint `GET /health`
+is also a liveness probe.
