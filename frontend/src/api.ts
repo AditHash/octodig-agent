@@ -2,6 +2,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 export type TokenResponse = { access_token: string; token_type: "bearer" };
 export type Target = { id: string; name: string; website: string | null; normalized_domain: string | null; notes: string; tags: string[] };
+export type Offering = { id: string; name: string; description: string; capabilities: string[]; business_outcomes: string[]; approved: boolean; version: number };
 export type ResearchRun = { id: string; status: string; provider: string; mode: string; account_id: string; error_code: string | null; attempts: number };
 export type ResearchReport = {
   metadata?: {
@@ -48,6 +49,14 @@ export function listTargets(token: string) {
 
 export function createTarget(token: string, input: { name: string; website?: string; notes?: string }) {
   return request<Target>("/api/v1/targets", { method: "POST", body: JSON.stringify(input) }, token);
+}
+
+export function listOfferings(token: string) {
+  return request<Offering[]>("/api/v1/offerings", {}, token);
+}
+
+export function createOffering(token: string, input: Omit<Offering, "id" | "version">) {
+  return request<Offering>("/api/v1/offerings", { method: "POST", body: JSON.stringify(input) }, token);
 }
 
 export function startResearch(token: string, targetId: string, input: { provider: "openai" | "gemini"; mode: "standard" | "deep"; max_cost_usd: string }, idempotencyKey: string) {

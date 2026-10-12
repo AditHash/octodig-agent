@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import re
 import time
-from collections.abc import Generator
 from datetime import UTC, datetime
+from decimal import Decimal
 
 import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
@@ -25,7 +25,6 @@ from .schemas import (
     OfferingCreate,
     OfferingResponse,
     RegisterRequest,
-    ResearchRunResponse,
     ResearchRunStatusResponse,
     ResearchStartRequest,
     TargetCreate,
@@ -42,7 +41,7 @@ app.add_middleware(
     allow_origins=[str(origin).rstrip("/") for origin in settings.cors_origins],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
 )
 bearer = HTTPBearer(auto_error=False)
 
@@ -231,7 +230,7 @@ def list_offerings(
 
 @app.post(
     "/api/v1/targets/{target_id}/research",
-    response_model=ResearchRunResponse,
+    response_model=ResearchRunStatusResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
 def start_research(
@@ -272,18 +271,22 @@ def start_research(
         input_snapshot={"company_name": target.name, "website": target.website},
     )
     session.add(run)
-    session.flush()
-    session.add(ResearchEvent(run_id=run.id, event_type="run.queued", data={"provider": run.provider}))
     try:
+        session.flush()
+        session.add(ResearchEvent(run_id=run.id, event_type="run.queued", data={"provider": run.provider}))
         session.commit()
     except IntegrityError:
         session.rollback()
+        if idempotency_key is None:
+            raise
         existing = session.scalar(select(ResearchRun).where(
             ResearchRun.workspace_id == membership.workspace_id,
             ResearchRun.idempotency_key == idempotency_key,
         ))
         if existing is not None and same_research_request(existing, target_id, payload):
             return existing
+        if existing is not None:
+            raise HTTPException(status_code=409, detail="Idempotency key was used for a different request")
         raise
     session.refresh(run)
     return run
@@ -294,7 +297,7 @@ def same_research_request(run: ResearchRun, target_id: str, payload: ResearchSta
         run.account_id == target_id
         and run.provider == payload.provider
         and run.mode == payload.mode
-        and run.max_cost_usd == str(payload.max_cost_usd)
+        and Decimal(run.max_cost_usd) == payload.max_cost_usd
     )
 
 

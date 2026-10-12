@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from octodig.api import app, database_ready, slugify
 from octodig.models import RunStatus, WorkspaceRole
 from octodig.schemas import ResearchStartRequest
-from octodig.security import decode_access_token, hash_password, issue_access_token, verify_password
+from octodig.security import hash_password, verify_password
 from octodig.settings import Settings
 
 
@@ -63,7 +63,7 @@ def test_production_settings_reject_unsafe_defaults() -> None:
 def test_production_settings_accept_secure_secret_and_origin() -> None:
     settings = Settings(
         environment="production",
-        jwt_secret="a-long-non-default-secret",
+        jwt_secret="a-long-non-default-secret-with-at-least-32-bytes",
         cors_origins=["https://app.example.com"],
     )
     assert settings.environment == "production"

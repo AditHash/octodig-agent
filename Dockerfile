@@ -7,8 +7,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 RUN pip install --no-cache-dir uv
-COPY pyproject.toml ./
-RUN uv sync --no-dev --no-install-project
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev --no-install-project
 COPY src ./src
 COPY alembic.ini ./
 COPY migrations ./migrations
