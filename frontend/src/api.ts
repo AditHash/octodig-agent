@@ -5,6 +5,10 @@ export type Target = { id: string; name: string; website: string | null; normali
 export type Offering = { id: string; name: string; description: string; capabilities: string[]; business_outcomes: string[]; approved: boolean; version: number };
 export type ResearchRun = { id: string; status: string; provider: string; mode: string; account_id: string; error_code: string | null; attempts: number };
 export type ResearchReport = {
+  run_id: string;
+  target: { name: string; identity_status: string; website: string | null };
+  claims: { id: string; section: string; statement: string; classification: string; verification_status: string; source_ids: string[]; rationale: string | null }[];
+  opportunities: { id: string; title: string; need_kind: string; offering_id: string | null; priority: string; rationale: string; supporting_claim_ids: string[]; gaps: string[]; discovery_questions: string[] }[];
   metadata?: {
     estimated_cost_usd?: string;
     reserved_cost_usd?: string;
@@ -18,6 +22,20 @@ export type ResearchReport = {
   sources?: { id: string; title?: string; url: string; publisher?: string }[];
   sections?: Record<string, { status: string; gaps: string[]; claim_ids: string[] }>;
 };
+
+export function listResearchRuns(token: string, offset = 0) {
+  return request<ResearchRun[]>(`/api/v1/runs?offset=${offset}&limit=50`, {}, token);
+}
+
+export function getProfile(token: string) {
+  return request<{ name: string; email: string; workspace: string; role: string }>("/api/v1/me", {}, token);
+}
+
+export async function downloadMarkdown(token: string, runId: string) {
+  const response = await fetch(`${API_URL}/api/v1/runs/${runId}/report.md`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error("Markdown report unavailable");
+  return response.text();
+}
 
 export async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {

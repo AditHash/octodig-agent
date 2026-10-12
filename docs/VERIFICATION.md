@@ -4,7 +4,7 @@ This review verifies the current application foundation, not production readines
 
 ## Checks executed
 
-- 47 backend tests, including HTTP integration against isolated SQLite: registration,
+- 60 backend tests, including HTTP integration against isolated SQLite: registration,
   login, authenticated targets and offerings, workspace isolation, idempotent run
   submission, cancellation, worker report persistence, JSON and Markdown retrieval.
 - Browser CORS preflight with Authorization, Content-Type and Idempotency-Key.
@@ -14,6 +14,12 @@ This review verifies the current application foundation, not production readines
 - PostgreSQL migration SQL rendering, including a regression check that the
   idempotency column is added only once on a fresh database.
 - Python compilation, Ruff correctness checks (`--select F`) and Git whitespace checks.
+- Chromium acceptance test against the real frontend, API and offline worker:
+  workspace registration, seller approval, target creation, research completion,
+  twelve-section evidence display, Markdown download, saved report after reload,
+  and workspace profile. Run `cd frontend && npm run test:e2e` after installing
+  Chromium with `npx playwright install chromium`. The disposable SQLite fixture
+  makes no paid provider calls and does not connect to the operator database.
 
 ## Defects corrected
 
@@ -33,19 +39,38 @@ This review verifies the current application foundation, not production readines
 - PostgreSQL migration execution, concurrency, lease recovery and cancellation
   races require tests against a real PostgreSQL instance. SQLite cannot prove them.
 - Docker startup was not tested: Docker Desktop is unavailable to this WSL distro.
-- Browser interaction, responsive layouts and accessibility require browser tests;
-  a successful production build does not prove those behaviors.
-- Real OpenAI/Gemini research has not been verified in this review. Pricing
-  reservations currently do not enforce actual token/search/model-call limits.
+- Responsive layouts, keyboard journeys and accessibility audits require additional
+  browser coverage beyond the desktop acceptance workflow.
+- Real OpenAI/Gemini research has not been verified. Configured ceilings are
+  implemented below; native grounding tokens and provider billing remain unproven.
 - Usage aggregation and native-search billing counts need provider-specific
   verification. Missing counts must not be presented as measured spend.
-- Source citation provenance, reachability, claim support and approved-offering
-  matching need stronger deterministic validation before facts are called verified.
-- Worker recovery needs fencing/heartbeats to prevent a slow worker and a worker
-  reclaiming its expired lease from both performing paid work.
-- Frontend still needs report claim/opportunity rendering, persistent run history,
-  reconnect after page reload, and complete navigation screens.
+- Quote support is checked through safe retrieval. Source authenticity, conflicting
+  claims and independent company identity still require stronger quality gates.
+- Worker advisory locking is implemented on a dedicated connection, but requires
+  PostgreSQL contention and process-crash testing before release.
+- Frontend renders claims, opportunities, exports, saved history and navigation.
 - The GitHub Actions workflow is committed locally; publication remains blocked
   by the active GitHub OAuth credential's missing workflow permission.
 
 No paid provider calls or production deployments were performed by this review.
+
+## Subsequent implementation
+
+The worker now persists budget reservations before spending, subtracts earlier
+reservations on recovery, and uses a PostgreSQL session advisory lock to prevent
+concurrent paid execution of a leased run. OpenAI requests set an output ceiling,
+hosted-tool call ceiling, timeout and zero retries; middleware bounds model calls
+and input size and removes filesystem/delegation tools. Gemini sets output and
+input ceilings and timeout with retries disabled. Its native-search query cap and
+billing equivalence still require provider-specific work.
+
+Source retrieval validates DNS and every redirect, pins the connection IP while
+verifying the TLS hostname, and bounds response size and retrieval time. Model
+verified labels now require a literal statement match in retrieved visible text.
+This checks quote support; it does not establish independent factual truth or
+resolve conflicting sources. Unmatched statements are explicitly downgraded.
+
+Lease cancellation/exhaustion and preserved retry reservations have offline state
+transition tests. Those tests simulate lock ownership; actual PostgreSQL advisory
+lock contention and process crashes are still release gates.

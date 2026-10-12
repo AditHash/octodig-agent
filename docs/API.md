@@ -21,6 +21,10 @@ Later:
 
 ## Start research — illustrative request
 
+`GET /api/v1/runs?limit=50&offset=0` returns workspace-scoped saved run history.
+`GET /api/v1/me` returns the authenticated user's workspace profile and role.
+The frontend restores history after reload and can reopen status and stored reports.
+
 The hosted endpoint is `POST /api/v1/targets/{target_id}/research`. Send a
 client-generated `Idempotency-Key` header for every user action that may be
 retried. Reusing the key with identical input returns the original run; reuse

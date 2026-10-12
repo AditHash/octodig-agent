@@ -62,6 +62,8 @@ class Source(BaseModel):
     @field_validator("url")
     @classmethod
     def require_public_https_url(cls, value: HttpUrl) -> HttpUrl:
+        if value.username or value.password:
+            raise ValueError("evidence sources must not contain credentials")
         if value.scheme != "https":
             raise ValueError("evidence sources must use HTTPS")
         host = value.host

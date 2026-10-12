@@ -189,6 +189,8 @@ def create_offering(
     membership: Membership = Depends(require_write_membership),
     session: Session = Depends(get_session),
 ) -> SellerOffering:
+    if payload.approved and membership.role not in {WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.SALES_MANAGER}:
+        raise HTTPException(status_code=403, detail="Catalog approval requires manager access")
     base_slug = slugify(payload.name)
     offering_slug = base_slug
     suffix = 2
@@ -306,6 +308,26 @@ def _owned_run(session: Session, run_id: str, workspace_id: str) -> ResearchRun:
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Research run not found")
     return run
+
+
+@app.get("/api/v1/runs", response_model=list[ResearchRunStatusResponse])
+def list_runs(
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    user: User = Depends(current_user), session: Session = Depends(get_session),
+) -> list[ResearchRun]:
+    workspace_id = active_membership(user, session).workspace_id
+    return list(session.scalars(select(ResearchRun).where(
+        ResearchRun.workspace_id == workspace_id,
+    ).order_by(ResearchRun.created_at.desc(), ResearchRun.id).offset(offset).limit(limit)))
+
+
+@app.get("/api/v1/me")
+def workspace_profile(user: User = Depends(current_user), session: Session = Depends(get_session)) -> dict:
+    membership = active_membership(user, session)
+    workspace = session.get(Workspace, membership.workspace_id)
+    return {"name": user.name, "email": user.email, "role": membership.role.value,
+            "workspace": workspace.name if workspace else "Unavailable"}
 
 
 @app.get("/api/v1/runs/{run_id}", response_model=ResearchRunStatusResponse)

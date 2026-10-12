@@ -1,6 +1,6 @@
 # OctoDig Implementation Plan
 
-**Status:** proposed roadmap  
+**Status:** implementation in progress; release gates in [docs/VERIFICATION.md](docs/VERIFICATION.md)
 **Goal:** move from a documented concept to a dependable, evidence-backed hybrid multi-agent research platform without losing the twelve report sections already established in SalesDig V2.
 
 ## What counts as success
@@ -55,15 +55,17 @@ Track methodology in [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md).
 ## Phase 1 — Hosted application foundation
 
 - [x] Initialize the actual application package, environment-based settings, FastAPI transport, React workspace shell, and external-PostgreSQL deployment scaffolding.
-- [ ] Create a single Deep Agent with a narrowly scoped research prompt and approved search tools.
-- [ ] Accept company name, optional official website, seller offerings, and research depth.
+- [x] Create a single Deep Agent with a narrowly scoped research prompt and approved search tools.
+- [x] Accept company name, optional official website, seller offerings, and research depth.
 - [ ] Capture provider citation annotations and original source metadata.
-- [ ] Store research findings separately from the final generated narrative.
+- [x] Store research findings separately from the final generated narrative.
 - [x] Validate twelve section placeholders and explicit missing-data statuses.
 - [ ] Stream progress/text locally and save Markdown + structured JSON.
 - [ ] Record timing, tool actions, input/output/reasoning tokens and estimated provider cost.
 
-**Exit criteria:** repeatable end-to-end CLI run with real source URLs, sensible factuality safeguards, and no fabricated unknown fields.
+**Exit criteria:** repeatable hosted frontend/API/worker run with real source URLs,
+sensible factuality safeguards, and no fabricated unknown fields. Offline acceptance
+passes; real-provider and PostgreSQL checks remain outstanding.
 
 ## Phase 2 — Hybrid multi-agent intelligence
 
@@ -81,11 +83,11 @@ Track methodology in [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md).
 
 ## Phase 3 — FastAPI and durable jobs
 
-- [ ] Expose validated research start, status, event-stream and report endpoints.
-- [ ] Separate long-running jobs from request processes using a durable worker mechanism.
-- [ ] Persist run events; support SSE reconnect using event IDs/cursors.
+- [x] Expose validated research start, status, event-stream and report endpoints.
+- [x] Separate long-running jobs from request processes using a durable worker mechanism.
+- [x] Persist run events; support SSE reconnect using event IDs/cursors.
 - [ ] Implement cancellation, bounded retries, timeout handling, idempotency, and explicit failure states.
-- [ ] Add authentication and workspace-level authorization before multi-user deployment.
+- [x] Add authentication and workspace-level authorization before multi-user deployment.
 - [ ] Expose health endpoints and structured operational logs.
 
 **Exit criteria:** clients can start research, reconnect to progress, and retrieve a final result after leaving the page.

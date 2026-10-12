@@ -4,6 +4,7 @@ SQLite tests application behavior; PostgreSQL migrations require separate checks
 """
 
 import pytest
+from datetime import UTC, datetime, timedelta
 from contextlib import contextmanager
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -12,10 +13,11 @@ from sqlalchemy.pool import StaticPool
 
 from octodig.api import app
 from octodig.db import Base, get_session
-from octodig.models import ResearchRun, RunStatus, TargetAccount
+from octodig.models import ResearchEvent, ResearchRun, RunStatus, TargetAccount
 from octodig.report_contract import empty_report
 from octodig.services.research import ProviderResult, execute_research
 from octodig.services.budget import ProviderPricing
+from octodig.services.jobs import claim_next_run
 from octodig.settings import Settings
 from decimal import Decimal
 
@@ -86,6 +88,9 @@ def test_authenticated_workflow_and_tenant_isolation(client):
     cancelled = client.post(f"/api/v1/runs/{run_id}/cancel", headers=first)
     assert cancelled.status_code == 200
     assert cancelled.json()["status"] == "cancelled"
+    assert client.get("/api/v1/runs", headers=first).json()[0]["id"] == run_id
+    assert client.get("/api/v1/runs", headers=second).json() == []
+    assert client.get("/api/v1/me", headers=first).json()["role"] == "owner"
     assert client.get("/health/ready").status_code == 200
 
 
@@ -126,3 +131,47 @@ def test_worker_report_is_retrievable_only_by_owning_workspace(client, monkeypat
     assert "Account research: Example" in markdown.text
     assert client.get(f"/api/v1/runs/{run_id}/report", headers=second).status_code == 404
     assert client.get(f"/api/v1/runs/{run_id}/report.md", headers=second).status_code == 404
+
+
+@pytest.mark.parametrize("status,expected", [
+    (RunStatus.CANCEL_REQUESTED, RunStatus.CANCELLED),
+    (RunStatus.RESEARCHING, RunStatus.FAILED),
+])
+def test_expired_work_recovery_respects_live_worker_lock(client, monkeypatch, status, expected):
+    headers = register(client, "recovery@example.com")
+    target_id = client.post("/api/v1/targets", headers=headers, json={"name": "Example"}).json()["id"]
+    run_id = client.post(f"/api/v1/targets/{target_id}/research", headers=headers,
+                         json={"provider": "openai", "max_cost_usd": "1"}).json()["id"]
+    with contextmanager(app.dependency_overrides[get_session])() as session:
+        run = session.get(ResearchRun, run_id)
+        run.status = status
+        run.attempts = 3
+        run.lease_expires_at = datetime.now(UTC) - timedelta(seconds=10)
+        session.commit()
+        monkeypatch.setattr("octodig.services.jobs.acquire_worker_lock", lambda *_: False)
+        assert claim_next_run(session) is None
+        session.refresh(run)
+        assert run.status == status
+        monkeypatch.setattr("octodig.services.jobs.acquire_worker_lock", lambda *_: True)
+        assert claim_next_run(session) is None
+        session.refresh(run)
+        assert run.status == expected
+        assert run.lease_expires_at is None
+
+
+def test_crash_reservations_prevent_retry_spending_full_budget(client, monkeypatch):
+    headers = register(client, "budget-recovery@example.com")
+    target_id = client.post("/api/v1/targets", headers=headers, json={"name": "Example"}).json()["id"]
+    run_id = client.post(f"/api/v1/targets/{target_id}/research", headers=headers,
+                         json={"provider": "openai", "max_cost_usd": "0.05"}).json()["id"]
+    monkeypatch.setattr("octodig.services.research._pricing", lambda _: ProviderPricing(
+        Decimal("10"), Decimal("20"), Decimal("0"), 1000, 1000, 0
+    ))
+    monkeypatch.setattr("octodig.services.research._openai_report", lambda *_: pytest.fail("No paid call allowed"))
+    with contextmanager(app.dependency_overrides[get_session])() as session:
+        run = session.get(ResearchRun, run_id)
+        run.status = RunStatus.RESEARCHING
+        session.add(ResearchEvent(run_id=run_id, event_type="budget.reserved", data={"usd": "0.04"}))
+        session.commit()
+        execute_research(session, run, session.get(TargetAccount, target_id))
+        assert run.status == RunStatus.BUDGET_EXCEEDED

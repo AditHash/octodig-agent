@@ -29,15 +29,16 @@ class Settings(BaseSettings):
     google_api_key: SecretStr | None = None
     gpt_model: str = "openai:gpt-5-nano"
     gemini_model: str = "gemini-2.5-flash-lite"
-    openai_input_usd_per_million: Decimal | None = None
-    openai_output_usd_per_million: Decimal | None = None
-    openai_search_call_usd: Decimal | None = None
-    gemini_input_usd_per_million: Decimal | None = None
-    gemini_output_usd_per_million: Decimal | None = None
-    gemini_search_call_usd: Decimal | None = None
+    openai_input_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    openai_output_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    openai_search_call_usd: Decimal | None = Field(default=None, ge=0)
+    gemini_input_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    gemini_output_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    gemini_search_call_usd: Decimal | None = Field(default=None, ge=0)
     research_max_input_tokens: int = Field(default=20_000, ge=1, le=1_000_000)
     research_max_output_tokens: int = Field(default=4_000, ge=1, le=100_000)
     research_max_search_calls: int = Field(default=3, ge=0, le=50)
+    provider_timeout_seconds: int = Field(default=120, ge=5, le=240)
 
     @field_validator(
         "openai_api_key", "google_api_key", "openai_input_usd_per_million",
