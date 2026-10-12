@@ -99,6 +99,7 @@ class SellerOffering(Timestamped, Base):
 
 class ResearchRun(Timestamped, Base):
     __tablename__ = "research_runs"
+    __table_args__ = (UniqueConstraint("workspace_id", "idempotency_key", name="uq_run_workspace_idempotency"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
     account_id: Mapped[str] = mapped_column(ForeignKey("target_accounts.id", ondelete="CASCADE"), index=True)
@@ -107,6 +108,7 @@ class ResearchRun(Timestamped, Base):
     provider: Mapped[str] = mapped_column(String(32))
     mode: Mapped[str] = mapped_column(String(16), default="standard")
     max_cost_usd: Mapped[str] = mapped_column(String(24))
+    idempotency_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
     input_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
     attempts: Mapped[int] = mapped_column(default=0)
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

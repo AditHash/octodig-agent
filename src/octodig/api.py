@@ -9,12 +9,13 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.responses import PlainTextResponse, StreamingResponse
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .db import SessionLocal, get_session
@@ -236,10 +237,23 @@ def list_offerings(
 def start_research(
     target_id: str,
     payload: ResearchStartRequest,
+    idempotency_key: str | None = Header(default=None, max_length=80),
     membership: Membership = Depends(require_write_membership),
     user: User = Depends(current_user),
     session: Session = Depends(get_session),
 ) -> ResearchRun:
+    if idempotency_key is not None and not re.fullmatch(r"[A-Za-z0-9_-]+", idempotency_key):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Idempotency-Key")
+    existing = None
+    if idempotency_key is not None:
+        existing = session.scalar(select(ResearchRun).where(
+            ResearchRun.workspace_id == membership.workspace_id,
+            ResearchRun.idempotency_key == idempotency_key,
+        ))
+        if existing is not None:
+            if not same_research_request(existing, target_id, payload):
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Idempotency key was used for a different request")
+            return existing
     target = session.scalar(
         select(TargetAccount).where(
             TargetAccount.id == target_id, TargetAccount.workspace_id == membership.workspace_id
@@ -254,14 +268,34 @@ def start_research(
         provider=payload.provider,
         mode=payload.mode,
         max_cost_usd=str(payload.max_cost_usd),
+        idempotency_key=idempotency_key,
         input_snapshot={"company_name": target.name, "website": target.website},
     )
     session.add(run)
     session.flush()
     session.add(ResearchEvent(run_id=run.id, event_type="run.queued", data={"provider": run.provider}))
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        existing = session.scalar(select(ResearchRun).where(
+            ResearchRun.workspace_id == membership.workspace_id,
+            ResearchRun.idempotency_key == idempotency_key,
+        ))
+        if existing is not None and same_research_request(existing, target_id, payload):
+            return existing
+        raise
     session.refresh(run)
     return run
+
+
+def same_research_request(run: ResearchRun, target_id: str, payload: ResearchStartRequest) -> bool:
+    return (
+        run.account_id == target_id
+        and run.provider == payload.provider
+        and run.mode == payload.mode
+        and run.max_cost_usd == str(payload.max_cost_usd)
+    )
 
 
 def _owned_run(session: Session, run_id: str, workspace_id: str) -> ResearchRun:

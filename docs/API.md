@@ -21,6 +21,11 @@ Later:
 
 ## Start research — illustrative request
 
+The hosted endpoint is `POST /api/v1/targets/{target_id}/research`. Send a
+client-generated `Idempotency-Key` header for every user action that may be
+retried. Reusing the key with identical input returns the original run; reuse
+with different input returns HTTP 409 and never starts another paid run.
+
 ~~~json
 {
   "company_name": "Example Company",
