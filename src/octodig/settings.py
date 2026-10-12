@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import AliasChoices, AliasGenerator, AnyHttpUrl, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -17,9 +17,11 @@ class Settings(BaseSettings):
     )
 
     database_url: str = "postgresql+psycopg://octodig:octodig@localhost:5432/octodig"
+    database_connect_timeout_seconds: int = Field(default=5, ge=1, le=30)
+    database_pool_timeout_seconds: int = Field(default=10, ge=1, le=60)
     environment: str = "development"
     jwt_secret: SecretStr = SecretStr("development-only-change-me")
-    jwt_algorithm: str = "HS256"
+    jwt_algorithm: Literal["HS256"] = "HS256"
     access_token_minutes: int = Field(default=60, ge=5, le=1440)
     cors_origins: Annotated[list[AnyHttpUrl], NoDecode] = Field(default_factory=lambda: ["http://localhost:5173"])
     run_lease_seconds: int = Field(default=300, ge=30, le=3600)
@@ -65,6 +67,8 @@ class Settings(BaseSettings):
             raise ValueError("JWT_SECRET must contain at least 32 bytes for production")
         if any(origin.host in {"localhost", "127.0.0.1"} for origin in self.cors_origins):
             raise ValueError("OCTODIG_CORS_ORIGINS must not include local origins in production")
+        if any(origin.scheme != "https" for origin in self.cors_origins):
+            raise ValueError("OCTODIG_CORS_ORIGINS must use HTTPS in production")
         return self
 
 

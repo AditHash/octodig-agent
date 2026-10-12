@@ -26,7 +26,8 @@ def issue_access_token(user_id: str) -> str:
 
 def decode_access_token(token: str) -> str:
     settings = get_settings()
-    payload = jwt.decode(token, settings.jwt_secret.get_secret_value(), algorithms=[settings.jwt_algorithm])
+    payload = jwt.decode(token, settings.jwt_secret.get_secret_value(), algorithms=[settings.jwt_algorithm],
+                         options={"require": ["exp", "sub"]})
     subject = payload.get("sub")
     if not isinstance(subject, str):
         raise jwt.InvalidTokenError("missing token subject")

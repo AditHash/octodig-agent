@@ -13,6 +13,8 @@ COPY src ./src
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY README.md ./
+RUN groupadd --gid 10001 octodig && useradd --uid 10001 --gid octodig --no-create-home octodig
+USER 10001:10001
 
 EXPOSE 8000
 CMD ["uvicorn", "octodig.api:app", "--host", "0.0.0.0", "--port", "8000"]

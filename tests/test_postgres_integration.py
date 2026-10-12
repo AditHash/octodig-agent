@@ -11,7 +11,7 @@ import time
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
-from octodig.api import cancel_run
+from octodig.api import cancel_run, database_ready
 from octodig.models import Base, Membership, ResearchRun, RunStatus, TargetAccount, User, Workspace
 from octodig.report_contract import empty_report
 from octodig.services.budget import ProviderPricing
@@ -159,3 +159,10 @@ def test_migration_command_uses_environment_database(postgres_engine):
         env={**os.environ, "OCTODIG_DATABASE_URL": url.render_as_string(hide_password=False)})
     assert result.returncode == 0, "Migration command failed using isolated database configuration"
     assert "(head)" in result.stdout
+
+
+def test_production_readiness_accepts_migrated_database(postgres_engine, monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr("octodig.api.settings", SimpleNamespace(environment="production"))
+    with Session(postgres_engine) as session:
+        assert database_ready(session) is True

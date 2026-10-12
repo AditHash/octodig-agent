@@ -4,7 +4,7 @@ This review verifies the current application foundation, not production readines
 
 ## Checks executed
 
-- 72 backend tests with the PostgreSQL suite enabled, including HTTP integration
+- 77 backend tests with the PostgreSQL suite enabled, including HTTP integration
   against both isolated SQLite and PostgreSQL: registration,
   login, authenticated targets and offerings, workspace isolation, idempotent run
   submission, cancellation, worker report persistence, JSON and Markdown retrieval.
@@ -21,6 +21,9 @@ This review verifies the current application foundation, not production readines
   and workspace profile. Run `cd frontend && npm run test:e2e` after installing
   Chromium with `npx playwright install chromium`. The disposable SQLite fixture
   makes no paid provider calls and does not connect to the operator database.
+- Production frontend acceptance through locally installed Nginx: same-origin API
+  routing, complete owner workflow, CSP/referrer/MIME headers and oversized request
+  rejection. Both browser tests passed. Container execution remains unverified.
 
 ## Defects corrected
 
@@ -83,3 +86,8 @@ Without this setting, the six PostgreSQL tests are skipped and SQLite HTTP tests
 
 These checks found and corrected migration configuration ignoring the operator's
 database URL and nine missing evidence/report indexes (migration 0005).
+
+Deployment adds non-root users, read-only runtime filesystems, private API networking,
+explicit migration operation, same-origin routing and allowlisted build contexts.
+Production readiness rejects an outdated schema; JWT validation requires expiry;
+production CORS origins require HTTPS. DB connection and pool waits are bounded.

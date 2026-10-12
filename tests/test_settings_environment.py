@@ -1,4 +1,5 @@
 from octodig.settings import Settings
+import pytest
 
 
 def test_documented_environment_variables_are_loaded(monkeypatch):
@@ -18,3 +19,9 @@ def test_blank_example_configuration_does_not_prevent_startup(monkeypatch):
     settings = Settings(_env_file=None)
     assert settings.openai_api_key is None
     assert settings.openai_input_usd_per_million is None
+
+
+def test_production_requires_https_origins():
+    with pytest.raises(ValueError, match="HTTPS"):
+        Settings(_env_file=None, environment="production", jwt_secret="offline-test-secret-with-at-least-32-bytes",
+                 cors_origins=["http://app.example.com"])

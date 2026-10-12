@@ -7,6 +7,10 @@ import re
 import time
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
+
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 
 import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
@@ -101,6 +105,12 @@ def liveness() -> dict[str, str]:
 def database_ready(session: Session) -> bool:
     try:
         session.execute(text("SELECT 1"))
+        if settings.environment == "production":
+            config = Config()
+            config.set_main_option("script_location", str(Path(__file__).resolve().parents[2] / "migrations"))
+            expected = ScriptDirectory.from_config(config).get_current_head()
+            if session.scalar(text("SELECT version_num FROM alembic_version")) != expected:
+                return False
     except SQLAlchemyError:
         return False
     return True
@@ -303,8 +313,11 @@ def same_research_request(run: ResearchRun, target_id: str, payload: ResearchSta
     )
 
 
-def _owned_run(session: Session, run_id: str, workspace_id: str) -> ResearchRun:
-    run = session.scalar(select(ResearchRun).where(ResearchRun.id == run_id, ResearchRun.workspace_id == workspace_id))
+def _owned_run(session: Session, run_id: str, workspace_id: str, lock: bool = False) -> ResearchRun:
+    statement = select(ResearchRun).where(ResearchRun.id == run_id, ResearchRun.workspace_id == workspace_id)
+    if lock:
+        statement = statement.with_for_update().execution_options(populate_existing=True)
+    run = session.scalar(statement)
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Research run not found")
     return run
@@ -343,7 +356,7 @@ def cancel_run(
     membership: Membership = Depends(require_write_membership),
     session: Session = Depends(get_session),
 ) -> ResearchRun:
-    run = _owned_run(session, run_id, membership.workspace_id)
+    run = _owned_run(session, run_id, membership.workspace_id, True)
     if run.status == RunStatus.QUEUED:
         run.status = RunStatus.CANCELLED
         run.ended_at = time_now_utc()

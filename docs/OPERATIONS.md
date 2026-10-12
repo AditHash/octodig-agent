@@ -44,3 +44,37 @@ Use [VERIFICATION.md](VERIFICATION.md) as the release checklist. Successful test
 do not replace backup restore drills, container startup, multi-host failure tests,
 provider billing validation or production monitoring. No production deployment was
 performed by these checks.
+
+## Hosted deployment
+
+Compose builds non-root API/worker and Nginx containers with read-only filesystems,
+temporary scratch space, dropped capabilities and no privilege escalation. Database
+credentials stay in the external environment. The API is reachable only inside the
+Compose network. The frontend binds to `127.0.0.1:8080`; put an HTTPS ingress in
+front of that address and configure the public HTTPS origin in
+`OCTODIG_CORS_ORIGINS`. Set a random JWT secret of at least 32 bytes.
+
+After a reviewed backup and maintenance decision, apply the schema with
+`docker compose --profile operations run --rm migrate`, then start API, worker and
+frontend with `docker compose up -d --build`. Migration is a separate operation;
+ordinary startup does not change the database schema. These are deployment
+instructions, not commands already run against production.
+
+Production readiness checks both database connectivity and the expected Alembic
+revision. Liveness only reports that the API process responds. Monitor readiness,
+restart counts, queue age, failed/reclaimed runs and reserved spend. A running
+process or green frontend health check does not establish worker progress.
+
+The browser calls `/api` on the frontend origin. Nginx forwards those requests to
+the API, limits request bodies, disables response buffering for events and sends
+CSP, frame, MIME and referrer headers. Logs include method, path, status and latency,
+excluding query strings and authorization headers. Access logs must still be
+protected because paths can include opaque account/run identifiers. HTTPS ingress
+owns certificates and HSTS. Trust forwarded client addresses only from explicitly
+configured ingress IPs; never enable blanket proxy trust on a public API listener.
+
+To exercise the built frontend through locally installed Nginx, build it with
+`VITE_API_URL='' npm run build` in `frontend`, then set `OCTODIG_TEST_NGINX_BIN`
+to that executable (and `OCTODIG_TEST_NGINX_MIME` if its MIME file is outside
+`/etc/nginx/mime.types`) before running `npm run test:e2e`. This runs the committed
+proxy configuration on loopback with offline API/worker fixtures, without Docker.
