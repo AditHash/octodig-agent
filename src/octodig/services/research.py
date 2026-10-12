@@ -14,6 +14,7 @@ from ..models import ResearchEvent, ResearchRun, RunStatus, SellerOffering, Targ
 from ..report_contract import ResearchReport, empty_report
 from ..settings import get_settings
 from .budget import BudgetExceededError, ProviderPricing, require_budget
+from .markdown import render_markdown
 from .report_store import save_report
 
 
@@ -198,13 +199,13 @@ def execute_research(session, run: ResearchRun, target: TargetAccount) -> None:
             )
         else:
             report.metadata.estimated_cost_usd = str(reserved_cost)
-        save_report(session, run, report)
+        save_report(session, run, report, markdown=render_markdown(report))
         run.status = RunStatus.COMPLETED if not report.gaps else RunStatus.COMPLETED_PARTIAL
         session.add(ResearchEvent(run_id=run.id, event_type="report.ready", data={"partial": bool(report.gaps)}))
     except (ResearchProviderError, BudgetExceededError) as exc:
         report = empty_report(run.id, target.name, target.website, run.mode)
         report.gaps.append(str(exc))
-        save_report(session, run, report)
+        save_report(session, run, report, markdown=render_markdown(report))
         run.status = RunStatus.BUDGET_EXCEEDED if isinstance(exc, BudgetExceededError) else RunStatus.COMPLETED_PARTIAL
         session.add(ResearchEvent(run_id=run.id, event_type="run.partial", data={"reason": type(exc).__name__}))
     except Exception:

@@ -123,6 +123,11 @@ When no approved seller catalog is supplied, label ideas as **unmatched suggesti
 4. A deterministic coverage validator materializes all twelve section keys and rejects malformed payloads.
 5. Markdown/HTML rendering is downstream from the validated structured report.
 
+The hosted API stores deterministic Markdown with each report and exposes it at
+`GET /api/v1/runs/{run_id}/report.md` under the same workspace authorization as
+the JSON payload. Markdown is a readable projection, not an alternate source
+of truth.
+
 A missing section is a validation error; a present section with status not_found is an honest research outcome.
 
 ## Future evolution

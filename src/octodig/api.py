@@ -12,7 +12,7 @@ import jwt
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi.responses import StreamingResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -344,3 +344,16 @@ def read_report(
     if report is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
     return report.payload
+
+
+@app.get("/api/v1/runs/{run_id}/report.md", response_class=PlainTextResponse)
+def read_report_markdown(
+    run_id: str, user: User = Depends(current_user), session: Session = Depends(get_session)
+) -> str:
+    membership = active_membership(user, session)
+    report = session.scalar(
+        select(StoredReport).where(StoredReport.run_id == run_id, StoredReport.workspace_id == membership.workspace_id)
+    )
+    if report is None or report.markdown is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Markdown report not found")
+    return report.markdown
