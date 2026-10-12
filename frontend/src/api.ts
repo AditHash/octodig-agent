@@ -4,7 +4,15 @@ export type TokenResponse = { access_token: string; token_type: "bearer" };
 export type Target = { id: string; name: string; website: string | null; normalized_domain: string | null; notes: string; tags: string[] };
 export type ResearchRun = { id: string; status: string; provider: string; mode: string; account_id: string; error_code: string | null; attempts: number };
 export type ResearchReport = {
-  metadata?: { estimated_cost_usd?: string; target_name?: string };
+  metadata?: {
+    estimated_cost_usd?: string;
+    reserved_cost_usd?: string;
+    input_tokens?: number;
+    output_tokens?: number;
+    reasoning_tokens?: number;
+    search_calls?: number;
+    duration_ms?: number;
+  };
   gaps?: string[];
   sources?: { id: string; title?: string; url: string; publisher?: string }[];
   sections?: Record<string, { status: string; gaps: string[]; claim_ids: string[] }>;

@@ -24,6 +24,13 @@ class ProviderPricing:
             + self.search_call * Decimal(self.max_search_calls)
         ).quantize(Decimal("0.000001"))
 
+    def usage_cost(self, input_tokens: int, output_tokens: int, search_calls: int) -> Decimal:
+        return (
+            self.input_per_million * Decimal(input_tokens) / Decimal(1_000_000)
+            + self.output_per_million * Decimal(output_tokens) / Decimal(1_000_000)
+            + self.search_call * Decimal(search_calls)
+        ).quantize(Decimal("0.000001"))
+
 
 class BudgetExceededError(RuntimeError):
     pass
