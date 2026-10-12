@@ -30,3 +30,11 @@ export function register(email: string, name: string, password: string, workspac
 export function listTargets(token: string) {
   return request<Target[]>("/api/v1/targets", {}, token);
 }
+
+export function createTarget(token: string, input: { name: string; website?: string; notes?: string }) {
+  return request<Target>("/api/v1/targets", { method: "POST", body: JSON.stringify(input) }, token);
+}
+
+export function startResearch(token: string, targetId: string, input: { provider: "openai" | "gemini"; mode: "standard" | "deep"; max_cost_usd: string }) {
+  return request<{ id: string; status: string }>(`/api/v1/targets/${targetId}/research`, { method: "POST", body: JSON.stringify(input) }, token);
+}
