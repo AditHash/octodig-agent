@@ -4,7 +4,8 @@ This review verifies the current application foundation, not production readines
 
 ## Checks executed
 
-- 60 backend tests, including HTTP integration against isolated SQLite: registration,
+- 72 backend tests with the PostgreSQL suite enabled, including HTTP integration
+  against both isolated SQLite and PostgreSQL: registration,
   login, authenticated targets and offerings, workspace isolation, idempotent run
   submission, cancellation, worker report persistence, JSON and Markdown retrieval.
 - Browser CORS preflight with Authorization, Content-Type and Idempotency-Key.
@@ -36,8 +37,11 @@ This review verifies the current application foundation, not production readines
 
 ## Remaining production gates
 
-- PostgreSQL migration execution, concurrency, lease recovery and cancellation
-  races require tests against a real PostgreSQL instance. SQLite cannot prove them.
+- PostgreSQL integration passed against an isolated PostgreSQL 16 database, including
+  all migrations, schema indexes, eight concurrent worker claims, live-worker lease
+  fencing, killed-process lock release, cancellation during evidence verification,
+  and HTTP ownership/persistence workflows. Multi-host outages and stress testing
+  remain release gates.
 - Docker startup was not tested: Docker Desktop is unavailable to this WSL distro.
 - Responsive layouts, keyboard journeys and accessibility audits require additional
   browser coverage beyond the desktop acceptance workflow.
@@ -47,8 +51,8 @@ This review verifies the current application foundation, not production readines
   verification. Missing counts must not be presented as measured spend.
 - Quote support is checked through safe retrieval. Source authenticity, conflicting
   claims and independent company identity still require stronger quality gates.
-- Worker advisory locking is implemented on a dedicated connection, but requires
-  PostgreSQL contention and process-crash testing before release.
+- Worker advisory locking passed real PostgreSQL contention and killed-process tests.
+  Network partitions during paid calls and long-duration load remain unverified.
 - Frontend renders claims, opportunities, exports, saved history and navigation.
 - The GitHub Actions workflow is committed locally; publication remains blocked
   by the active GitHub OAuth credential's missing workflow permission.
@@ -71,6 +75,11 @@ verified labels now require a literal statement match in retrieved visible text.
 This checks quote support; it does not establish independent factual truth or
 resolve conflicting sources. Unmatched statements are explicitly downgraded.
 
-Lease cancellation/exhaustion and preserved retry reservations have offline state
-transition tests. Those tests simulate lock ownership; actual PostgreSQL advisory
-lock contention and process crashes are still release gates.
+Lease cancellation/exhaustion and preserved retry reservations have state transition
+tests. Real PostgreSQL tests additionally exercise lock contention and process death.
+Run `OCTODIG_TEST_DATABASE_URL=... uv run pytest` against a disposable database whose
+name ends in `_test`; each test owns a random schema and removes only that schema.
+Without this setting, the six PostgreSQL tests are skipped and SQLite HTTP tests run.
+
+These checks found and corrected migration configuration ignoring the operator's
+database URL and nine missing evidence/report indexes (migration 0005).

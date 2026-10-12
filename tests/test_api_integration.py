@@ -4,6 +4,7 @@ SQLite tests application behavior; PostgreSQL migrations require separate checks
 """
 
 import pytest
+import os
 from datetime import UTC, datetime, timedelta
 from contextlib import contextmanager
 from fastapi.testclient import TestClient
@@ -22,13 +23,16 @@ from octodig.settings import Settings
 from decimal import Decimal
 
 
-@pytest.fixture
-def client(monkeypatch):
+@pytest.fixture(params=["sqlite"] + (["postgresql"] if os.environ.get("OCTODIG_TEST_DATABASE_URL") else []))
+def client(monkeypatch, request):
     monkeypatch.setattr("octodig.security.get_settings", lambda: Settings(
         _env_file=None, jwt_secret="offline-test-secret-with-at-least-32-bytes",
     ))
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    Base.metadata.create_all(engine)
+    if request.param == "postgresql":
+        engine = request.getfixturevalue("postgres_engine")
+    else:
+        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        Base.metadata.create_all(engine)
 
     def session_override():
         with Session(engine) as session:
@@ -40,7 +44,8 @@ def client(monkeypatch):
             yield client
     finally:
         app.dependency_overrides.clear()
-        engine.dispose()
+        if request.param == "sqlite":
+            engine.dispose()
 
 
 def register(client, email):
