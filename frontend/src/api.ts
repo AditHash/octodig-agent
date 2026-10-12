@@ -2,6 +2,13 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 export type TokenResponse = { access_token: string; token_type: "bearer" };
 export type Target = { id: string; name: string; website: string | null; normalized_domain: string | null; notes: string; tags: string[] };
+export type ResearchRun = { id: string; status: string; provider: string; mode: string; account_id: string; error_code: string | null; attempts: number };
+export type ResearchReport = {
+  metadata?: { estimated_cost_usd?: string; target_name?: string };
+  gaps?: string[];
+  sources?: { id: string; title?: string; url: string; publisher?: string }[];
+  sections?: Record<string, { status: string; gaps: string[]; claim_ids: string[] }>;
+};
 
 export async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -36,5 +43,17 @@ export function createTarget(token: string, input: { name: string; website?: str
 }
 
 export function startResearch(token: string, targetId: string, input: { provider: "openai" | "gemini"; mode: "standard" | "deep"; max_cost_usd: string }) {
-  return request<{ id: string; status: string }>(`/api/v1/targets/${targetId}/research`, { method: "POST", body: JSON.stringify(input) }, token);
+  return request<ResearchRun>(`/api/v1/targets/${targetId}/research`, { method: "POST", body: JSON.stringify(input) }, token);
+}
+
+export function getResearchRun(token: string, runId: string) {
+  return request<ResearchRun>(`/api/v1/runs/${runId}`, {}, token);
+}
+
+export function cancelResearchRun(token: string, runId: string) {
+  return request<ResearchRun>(`/api/v1/runs/${runId}/cancel`, { method: "POST" }, token);
+}
+
+export function getResearchReport(token: string, runId: string) {
+  return request<ResearchReport>(`/api/v1/runs/${runId}/report`, {}, token);
 }
