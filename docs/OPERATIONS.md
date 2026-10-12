@@ -41,7 +41,7 @@ do not prove exactly-once external billing during a network partition.
 ## Release evidence still needed
 
 Use [VERIFICATION.md](VERIFICATION.md) as the release checklist. Successful tests
-do not replace backup restore drills, container startup, multi-host failure tests,
+do not replace backup restore drills, multi-host failure tests,
 provider billing validation or production monitoring. No production deployment was
 performed by these checks.
 
@@ -86,3 +86,24 @@ To exercise the built frontend through locally installed Nginx, build it with
 to that executable (and `OCTODIG_TEST_NGINX_MIME` if its MIME file is outside
 `/etc/nginx/mime.types`) before running `npm run test:e2e`. This runs the committed
 proxy configuration on loopback with offline API/worker fixtures, without Docker.
+
+## Actual image smoke test
+
+Build `octodig-api:verification` from the repository root and
+`octodig-frontend:verification` from `frontend`. Set `OCTODIG_TEST_DATABASE_URL`
+to a local disposable PostgreSQL database and `OCTODIG_CONTAINER_TEST_DATABASE_URL`
+to the same database using a host the Docker engine can reach. Both names must
+end in `_test`. Run `uv run python tests/container_smoke.py`; optionally set
+`OCTODIG_TEST_DOCKER_BIN` when Docker's executable is outside PATH.
+
+The harness verifies ownership of its random schema before applying migrations,
+creates its own isolated Docker network, runs non-root API/worker/frontend with
+read-only filesystems and dropped capabilities, and exercises authenticated
+registration, catalog, queue, worker report persistence, history and export through
+the actual frontend proxy. It uses an unconfigured-provider partial result, without
+paid requests. It removes only its own containers, network, schema and temporary
+environment file. It does not start a PostgreSQL container or publish host ports.
+
+Base images are pinned to verified registry digests and uv to 0.12.21. Update these
+pins with dependency review and image scanning before each release. The Nginx stable
+version was checked against the [official image manifest](https://github.com/docker-library/official-images/blob/master/library/nginx).

@@ -23,7 +23,15 @@ This review verifies the current application foundation, not production readines
   makes no paid provider calls and does not connect to the operator database.
 - Production frontend acceptance through locally installed Nginx: same-origin API
   routing, complete owner workflow, CSP/referrer/MIME headers and oversized request
-  rejection. Both browser tests passed. Container execution remains unverified.
+  rejection. Four browser checks passed across desktop and mobile. WCAG A/AA scans
+  reported no violations on sign-in, dashboard and report fixture screens; keyboard
+  target creation and horizontal overflow checks passed.
+- Actual Docker image builds and an isolated container smoke test passed through
+  Docker Desktop's Windows client: external PostgreSQL, migrations, production
+  readiness, non-root/read-only API and frontend, worker queue execution, registration,
+  approved catalog, partial report persistence, saved history and Markdown export.
+  The smoke test disabled provider keys, created no DB container or host ports,
+  and removed its own containers, network, random schema and temporary environment.
 
 ## Defects corrected
 
@@ -45,11 +53,14 @@ This review verifies the current application foundation, not production readines
   fencing, killed-process lock release, cancellation during evidence verification,
   and HTTP ownership/persistence workflows. Multi-host outages and stress testing
   remain release gates.
-- Docker startup was not tested: Docker Desktop is unavailable to this WSL distro.
-- Responsive layouts, keyboard journeys and accessibility audits require additional
-  browser coverage beyond the desktop acceptance workflow.
+- Operator-specific HTTPS ingress, image scanning, backup restore drills and
+  multi-host deployment remain release gates. Individual hardened images were tested;
+  a production deployment was not performed.
+- Manual screen-reader review, extended keyboard journeys and representative long
+  reports need coverage beyond automated desktop/mobile fixture checks.
 - Real OpenAI/Gemini research has not been verified. Configured ceilings are
   implemented below; native grounding tokens and provider billing remain unproven.
+  No provider keys or pricing rates were configured in this verification environment.
 - Usage aggregation and native-search billing counts need provider-specific
   verification. Missing counts must not be presented as measured spend.
 - Quote support is checked through safe retrieval. Source authenticity, conflicting

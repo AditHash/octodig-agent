@@ -1,7 +1,15 @@
-import { expect, test } from "@playwright/test";
+import { expect, Page, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+async function accessible(page: Page) {
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(results.violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+}
 
 test("workspace owner researches an account and reopens evidence after reload", async ({ page }) => {
   await page.goto("/");
+  await accessible(page);
   await page.getByRole("button", { name: "Need a workspace? Register" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Browser Owner");
   await page.getByLabel("Workspace", { exact: true }).fill("Browser Workspace");
@@ -9,7 +17,10 @@ test("workspace owner researches an account and reopens evidence after reload", 
   await page.getByLabel("Password").fill("offline-browser-password");
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Target accounts" })).toBeVisible();
-  await page.getByRole("button", { name: "New target", exact: true }).click();
+  await accessible(page);
+  const newTarget = page.getByRole("button", { name: "New target", exact: true });
+  await newTarget.focus();
+  await page.keyboard.press("Enter");
   await page.getByLabel("Company name").fill("Example");
   await page.getByLabel("Official website").fill("https://example.com");
   await page.getByRole("button", { name: "Create target", exact: true }).click();
@@ -29,6 +40,7 @@ test("workspace owner researches an account and reopens evidence after reload", 
   await expect(page.getByText("verified · supported", { exact: true })).toBeVisible();
   await expect(page.getByText("Example provides cloud software.", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Gaps and limitations" })).toBeVisible();
+  await accessible(page);
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download Markdown" }).click();
   expect((await download).suggestedFilename()).toMatch(/^octodig-.*\.md$/);
