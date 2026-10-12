@@ -134,6 +134,8 @@ Early CLI POC: in-process execution and local JSON/Markdown artifacts.
 
 Later API: create a durable run, enqueue worker task, persist checkpoint + events, stream progress through SSE, retrieve completed report independently of the initiating HTTP connection. A disconnected SSE client should **not** cancel underlying research.
 
+The PostgreSQL worker lease is finite. An expired in-progress lease is reclaimed up to the configured attempt limit; after that, the run ends with `retry_exhausted` and an auditable event rather than remaining stuck.
+
 ## Evidence handling
 
 - Search result summaries are leads, not sufficient verification on their own.

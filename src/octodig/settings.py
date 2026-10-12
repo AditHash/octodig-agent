@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     access_token_minutes: int = Field(default=60, ge=5, le=1440)
     cors_origins: list[AnyHttpUrl] = Field(default_factory=lambda: ["http://localhost:5173"])
     run_lease_seconds: int = Field(default=300, ge=30, le=3600)
+    run_max_attempts: int = Field(default=3, ge=1, le=10)
     worker_poll_seconds: float = Field(default=2.0, ge=0.2, le=60)
     openai_api_key: SecretStr | None = None
     google_api_key: SecretStr | None = None
