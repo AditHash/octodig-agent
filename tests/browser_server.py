@@ -12,6 +12,7 @@ import uvicorn
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from octodig import api
 from octodig.api import app
 from octodig.db import get_session
 from octodig.models import Base, TargetAccount
@@ -43,6 +44,7 @@ def serve():
                 yield session
 
         app.dependency_overrides[get_session] = sessions
+        api.open_event_session = lambda: Session(engine)
         research._pricing = lambda *_: ProviderPricing(Decimal("1"), Decimal("2"), Decimal("0"), 1000, 500, 0)
         research._openai_report = fixture_report
         evidence_gate.fetch_public_text = lambda url: (url, "Example provides cloud software.")

@@ -67,6 +67,11 @@ def time_now_utc() -> datetime:
     return datetime.now(UTC)
 
 
+def open_event_session() -> Session:
+    """Open a short-lived session for SSE polling after the request scope ends."""
+    return SessionLocal()
+
+
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug[:72] or "workspace"
@@ -412,7 +417,7 @@ def stream_run_events(
     def event_stream():
         seen = after
         for _ in range(30):
-            with SessionLocal() as event_session:
+            with open_event_session() as event_session:
                 run = _owned_run(event_session, run_id, workspace_id)
                 events = list(event_session.scalars(
                     select(ResearchEvent).where(ResearchEvent.run_id == run_id).order_by(ResearchEvent.created_at, ResearchEvent.id)

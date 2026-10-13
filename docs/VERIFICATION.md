@@ -122,3 +122,8 @@ gate remain mandatory before a claim can be supported. Synthetic adapter tests
 cover citation extraction, de-duplication, and rejection of insecure or private
 destinations. Live-provider citation payload formats still require release-time
 verification with configured non-production provider credentials.
+
+The authenticated frontend consumes the run SSE stream with cursor-based
+reconnection and refreshes authoritative run status after each event. Workers
+emit queue, provider-call, source-verification and report-ready milestones;
+the browser workflow verifies the visible ready state before opening the report.

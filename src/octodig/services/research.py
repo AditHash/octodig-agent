@@ -445,6 +445,9 @@ def execute_research(session, run: ResearchRun, target: TargetAccount) -> None:
         reserved_before = sum((Decimal(event.data["usd"]) for event in prior_reservations), Decimal("0"))
         reserved_cost = require_budget(str(Decimal(run.max_cost_usd) - reserved_before), pricing)
         session.add(ResearchEvent(run_id=run.id, event_type="budget.reserved", data={"usd": str(reserved_cost)}))
+        session.add(ResearchEvent(run_id=run.id, event_type="research.provider_call_started", data={
+            "provider": run.provider, "mode": run.mode,
+        }))
         # Persist spend authorization before the provider call. A process crash
         # cannot erase it and permit retries to spend the full cap again.
         session.commit()
@@ -465,6 +468,14 @@ def execute_research(session, run: ResearchRun, target: TargetAccount) -> None:
         if run.status == RunStatus.CANCEL_REQUESTED:
             run.status = RunStatus.CANCELLED
             session.add(ResearchEvent(run_id=run.id, event_type="run.cancelled", data={"after_provider_call": True}))
+            return
+        session.add(ResearchEvent(run_id=run.id, event_type="research.evidence_verification_started", data={}))
+        # Make this progress milestone visible before bounded source retrieval.
+        session.commit()
+        session.refresh(run)
+        if run.status == RunStatus.CANCEL_REQUESTED:
+            run.status = RunStatus.CANCELLED
+            session.add(ResearchEvent(run_id=run.id, event_type="run.cancelled", data={"before_verification": True}))
             return
         report = provider_result.report
         # Model output cannot redirect the identity, report key or requested mode.
@@ -501,7 +512,11 @@ def execute_research(session, run: ResearchRun, target: TargetAccount) -> None:
         save_report(session, run, report, markdown=render_markdown(report))
         partial = bool(report.gaps) or any(section.status != "complete" or section.gaps for section in report.sections.values())
         run.status = RunStatus.COMPLETED_PARTIAL if partial else RunStatus.COMPLETED
-        session.add(ResearchEvent(run_id=run.id, event_type="report.ready", data={"partial": partial}))
+        session.add(ResearchEvent(run_id=run.id, event_type="report.ready", data={
+            "partial": partial,
+            "sources": len(report.sources),
+            "claims": len(report.claims),
+        }))
     except (ResearchProviderError, BudgetExceededError) as exc:
         report = empty_report(run.id, target.name, target.website, run.mode)
         report.gaps.append(str(exc))

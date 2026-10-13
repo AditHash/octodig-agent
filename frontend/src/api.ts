@@ -4,6 +4,7 @@ export type TokenResponse = { access_token: string; token_type: "bearer" };
 export type Target = { id: string; name: string; website: string | null; normalized_domain: string | null; notes: string; tags: string[] };
 export type Offering = { id: string; name: string; description: string; capabilities: string[]; business_outcomes: string[]; approved: boolean; version: number };
 export type ResearchRun = { id: string; status: string; provider: string; mode: string; account_id: string; error_code: string | null; attempts: number };
+export type ResearchEvent = { id: string; type: string; data: Record<string, unknown> };
 export type ResearchReport = {
   run_id: string;
   target: { name: string; identity_status: string; website: string | null };
@@ -93,4 +94,45 @@ export function cancelResearchRun(token: string, runId: string) {
 
 export function getResearchReport(token: string, runId: string) {
   return request<ResearchReport>(`/api/v1/runs/${runId}/report`, {}, token);
+}
+
+export async function streamResearchEvents(
+  token: string,
+  runId: string,
+  after: string | null,
+  signal: AbortSignal,
+  onEvent: (event: ResearchEvent) => void,
+): Promise<string | null> {
+  const query = after ? `?after=${encodeURIComponent(after)}` : "";
+  const response = await fetch(`${API_URL}/api/v1/runs/${runId}/events${query}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" }, signal,
+  });
+  if (!response.ok || !response.body) throw new Error("Live research updates are unavailable");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let lastEvent = after;
+  let id = "";
+  let type = "message";
+  let data = "";
+  function dispatch() {
+    if (!data) return;
+    try { onEvent({ id, type, data: JSON.parse(data) as Record<string, unknown> }); lastEvent = id || lastEvent; }
+    catch { /* Ignore malformed event payloads; the run-status refresh remains authoritative. */ }
+    id = ""; type = "message"; data = "";
+  }
+  while (true) {
+    const next = await reader.read();
+    buffer += decoder.decode(next.value || new Uint8Array(), { stream: !next.done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const rawLine of lines) {
+      const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+      if (!line) { dispatch(); continue; }
+      if (line.startsWith("id:")) id = line.slice(3).trim();
+      else if (line.startsWith("event:")) type = line.slice(6).trim();
+      else if (line.startsWith("data:")) data += line.slice(5).trim();
+    }
+    if (next.done) { dispatch(); return lastEvent; }
+  }
 }

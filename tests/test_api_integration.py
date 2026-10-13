@@ -42,6 +42,7 @@ def client(monkeypatch, request):
             yield session
 
     app.dependency_overrides[get_session] = session_override
+    monkeypatch.setattr("octodig.api.open_event_session", lambda: Session(engine))
     try:
         with TestClient(app) as client:
             yield client
@@ -140,6 +141,11 @@ def test_worker_report_is_retrievable_only_by_owning_workspace(client, monkeypat
     assert report.status_code == 200
     assert len(report.json()["sections"]) == 12
     assert report.json()["metadata"]["input_tokens"] == 100
+    events = client.get(f"/api/v1/runs/{run_id}/events", headers=first)
+    assert events.status_code == 200
+    assert "event: research.provider_call_started" in events.text
+    assert "event: research.evidence_verification_started" in events.text
+    assert "event: report.ready" in events.text
     markdown = client.get(f"/api/v1/runs/{run_id}/report.md", headers=first)
     assert markdown.status_code == 200
     assert "Account research: Example" in markdown.text

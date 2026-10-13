@@ -35,6 +35,7 @@ test("workspace owner researches an account and reopens evidence after reload", 
   await page.getByRole("button", { name: "Research", exact: true }).click();
   await page.getByLabel("Maximum cost USD").fill("1");
   await page.getByRole("button", { name: "Queue research" }).click();
+  await expect(page.getByText("Report is ready.", { exact: true })).toBeVisible({ timeout: 15000 });
   await page.getByRole("button", { name: "View report", exact: true }).click({ timeout: 15000 });
   await expect(page.getByRole("navigation", { name: "Report sections" }).getByRole("link")).toHaveCount(12);
   await expect(page.getByText("verified · supported", { exact: true })).toBeVisible();
