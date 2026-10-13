@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
 from datetime import UTC, datetime
@@ -24,6 +25,7 @@ from sqlalchemy.orm import Session
 
 from .db import SessionLocal, get_session
 from .models import Membership, ResearchEvent, ResearchRun, RunStatus, SellerOffering, StoredReport, TargetAccount, User, Workspace, WorkspaceRole
+from .observability import configure_logging
 from .schemas import (
     LoginRequest,
     OfferingCreate,
@@ -41,6 +43,7 @@ from .services.request_limits import consume_request_limit
 
 settings = get_settings()
 app = FastAPI(title="OctoDig API", version="0.1.0")
+logger = configure_logging().getChild("api")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[str(origin).rstrip("/") for origin in settings.cors_origins],
@@ -50,6 +53,24 @@ app.add_middleware(
 )
 bearer = HTTPBearer(auto_error=False)
 dummy_password_hash = hash_password("offline-timing-mitigation-password")
+
+
+@app.middleware("http")
+async def log_request(request: Request, call_next):
+    """Log bounded transport metadata, excluding query strings and headers."""
+    started = time.monotonic()
+    response = None
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        logger.info("http_request", extra={
+            "event": "http_request",
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code if response is not None else 500,
+            "duration_ms": int((time.monotonic() - started) * 1000),
+        })
 
 
 @app.exception_handler(SQLAlchemyError)

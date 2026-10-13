@@ -73,6 +73,12 @@ revision. Liveness only reports that the API process responds. Monitor readiness
 restart counts, queue age, failed/reclaimed runs and reserved spend. A running
 process or green frontend health check does not establish worker progress.
 
+Application logs are newline-delimited JSON. API entries contain only method,
+path (without query string), status, and duration; worker entries contain a run
+ID, attempt, and scrubbed error code where applicable. Prompt text, provider
+responses, authorization headers, request bodies, connection strings, and
+exception messages are deliberately excluded.
+
 The browser calls `/api` on the frontend origin. Nginx forwards those requests to
 the API, limits request bodies, disables response buffering for events and sends
 CSP, frame, MIME and referrer headers. Logs include method, path, status and latency,

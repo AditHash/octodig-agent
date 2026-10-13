@@ -88,7 +88,7 @@ passes; real-provider and PostgreSQL checks remain outstanding.
 - [x] Persist run events; support SSE reconnect using event IDs/cursors.
 - [ ] Implement cancellation, bounded retries, timeout handling, idempotency, and explicit failure states.
 - [x] Add authentication and workspace-level authorization before multi-user deployment.
-- [ ] Expose health endpoints and structured operational logs.
+- [x] Expose health endpoints and structured operational logs.
 
 **Exit criteria:** clients can start research, reconnect to progress, and retrieve a final result after leaving the page.
 
