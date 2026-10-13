@@ -114,3 +114,11 @@ headers, registration throttling, idempotent research retries and scrubbed stora
 failure responses. Counter identities are HMAC digests and expired counters are
 removed by the worker. Fixed-window boundary bursts and upstream abuse protection
 are documented in [SECURITY.md](SECURITY.md).
+
+OpenAI URL-citation annotations and Gemini grounding chunks are now retained as
+provider-labelled source appendix records. They are not automatically linked to
+claims or treated as verified; public-HTTPS validation and the bounded retrieval
+gate remain mandatory before a claim can be supported. Synthetic adapter tests
+cover citation extraction, de-duplication, and rejection of insecure or private
+destinations. Live-provider citation payload formats still require release-time
+verification with configured non-production provider credentials.

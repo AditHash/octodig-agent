@@ -97,6 +97,11 @@ because its native grounding query cap is not yet enforceable through the curren
 adapter. Delegation availability is implemented; comparative evidence that it
 improves report quality remains a benchmark gate.
 
+Provider-native URL citations are retained in the source appendix with their
+provider and locator metadata. They remain untrusted leads: the application never
+uses a provider citation alone to mark a claim verified, and applies the same
+public-HTTPS validation and bounded retrieval gate before claim support is granted.
+
 ## Conceptual specialists
 
 - **Company/market:** company identity, overview, customers, business model, offerings and competitors.

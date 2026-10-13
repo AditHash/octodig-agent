@@ -57,7 +57,7 @@ Track methodology in [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md).
 - [x] Initialize the actual application package, environment-based settings, FastAPI transport, React workspace shell, and external-PostgreSQL deployment scaffolding.
 - [x] Create a single Deep Agent with a narrowly scoped research prompt and approved search tools.
 - [x] Accept company name, optional official website, seller offerings, and research depth.
-- [ ] Capture provider citation annotations and original source metadata.
+- [x] Capture provider citation annotations and original source metadata.
 - [x] Store research findings separately from the final generated narrative.
 - [x] Validate twelve section placeholders and explicit missing-data statuses.
 - [ ] Stream progress/text locally and save Markdown + structured JSON.

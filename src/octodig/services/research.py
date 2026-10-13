@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 from sqlalchemy import select
 
 from ..models import ResearchEvent, ResearchRun, RunStatus, SellerOffering, TargetAccount
-from ..report_contract import ResearchReport, SECTION_KEYS, empty_report
+from ..report_contract import ResearchReport, SECTION_KEYS, Source, empty_report
 from ..settings import get_settings
 from .budget import BudgetExceededError, ProviderPricing, require_budget
 from .markdown import render_markdown
@@ -36,6 +36,17 @@ class ProviderResult:
     search_calls: int | None = None
     model_calls: int | None = None
     delegates_used: list[str] | None = None
+    citations: list["ProviderCitation"] | None = None
+
+
+@dataclass(frozen=True)
+class ProviderCitation:
+    """Provider-returned source metadata, still untrusted until retrieved."""
+
+    url: str
+    title: str | None
+    provider: str
+    locator: str | None = None
 
 
 class OpenAIRunBudget:
@@ -154,6 +165,89 @@ def _number(value: object) -> int | None:
 def _usage_value(usage: object, key: str) -> int | None:
     value = usage.get(key) if isinstance(usage, dict) else getattr(usage, key, None)
     return _number(value)
+
+
+def _field(value: object, name: str) -> object | None:
+    return value.get(name) if isinstance(value, dict) else getattr(value, name, None)
+
+
+def _text(value: object, maximum: int) -> str | None:
+    if not isinstance(value, str):
+        return None
+    value = " ".join(value.split())
+    return value[:maximum] or None
+
+
+def _openai_citations(messages: list[object]) -> list[ProviderCitation]:
+    citations: list[ProviderCitation] = []
+    for message in messages:
+        content = getattr(message, "content", None)
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            annotations = _field(block, "annotations")
+            if not isinstance(annotations, list):
+                continue
+            for annotation in annotations:
+                if _field(annotation, "type") != "url_citation":
+                    continue
+                url = _text(_field(annotation, "url"), 2048)
+                if url:
+                    citations.append(ProviderCitation(
+                        url=url,
+                        title=_text(_field(annotation, "title"), 500),
+                        provider="openai_web_search",
+                        locator="OpenAI hosted-search citation",
+                    ))
+    return citations
+
+
+def _gemini_citations(grounding: object) -> list[ProviderCitation]:
+    chunks = _field(grounding, "grounding_chunks")
+    if not isinstance(chunks, list):
+        return []
+    citations: list[ProviderCitation] = []
+    for chunk in chunks:
+        web = _field(chunk, "web")
+        url = _text(_field(web, "uri"), 2048)
+        if url:
+            citations.append(ProviderCitation(
+                url=url,
+                title=_text(_field(web, "title"), 500),
+                provider="gemini_google_search",
+                locator="Gemini grounding citation",
+            ))
+    return citations
+
+
+def merge_provider_citations(report: ResearchReport, citations: list[ProviderCitation]) -> None:
+    """Retain provider provenance without granting it claim-level trust."""
+    known_urls = {str(source.url) for source in report.sources}
+    used_ids = {source.id for source in report.sources}
+    appended = 0
+    for citation in citations:
+        if appended >= 20:
+            continue
+        source_id = f"provider_source_{appended + 1}"
+        while source_id in used_ids:
+            source_id = f"{source_id}_x"
+        try:
+            source = Source(
+                id=source_id,
+                url=citation.url,
+                title=citation.title,
+                retrieved_at=datetime.now(UTC),
+                provider=citation.provider,
+                locator=citation.locator,
+            )
+        except ValueError:
+            continue
+        if str(source.url) in known_urls:
+            continue
+        report.sources.append(source)
+        known_urls.add(str(source.url))
+        used_ids.add(source.id)
+        appended += 1
 
 
 def _openai_usage(messages: list[object]) -> tuple[int | None, int | None, int | None, int]:
@@ -288,6 +382,7 @@ def _openai_report(run: ResearchRun, target: TargetAccount, offerings: list[Sell
         search_calls=search_calls,
         model_calls=budget.calls,
         delegates_used=delegates_used,
+        citations=_openai_citations(messages),
     )
 
 
@@ -330,6 +425,7 @@ def _gemini_report(run: ResearchRun, target: TargetAccount, offerings: list[Sell
         search_calls=len(queries) if queries is not None else None,
         model_calls=1,
         delegates_used=[],
+        citations=_gemini_citations(grounding),
     )
 
 
@@ -376,6 +472,7 @@ def execute_research(session, run: ResearchRun, target: TargetAccount) -> None:
         report.mode = run.mode
         report.target.name = target.name
         report.target.website = empty_report(run.id, target.name, target.website, run.mode).target.website
+        merge_provider_citations(report, provider_result.citations or [])
         approved_ids = {offering.id for offering in offerings}
         if any(item.offering_id is not None and item.offering_id not in approved_ids for item in report.opportunities):
             raise ResearchProviderError("Report referenced an offering outside the approved workspace catalog")
