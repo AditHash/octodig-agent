@@ -123,6 +123,11 @@ cover citation extraction, de-duplication, and rejection of insecure or private
 destinations. Live-provider citation payload formats still require release-time
 verification with configured non-production provider credentials.
 
+The evidence gate also prevents a section from remaining `complete` when no
+claim in that section survived source verification. It downgrades those
+sections to `insufficient_evidence`, or to `partial` when verified support is
+mixed, and records the reason as a visible gap.
+
 The authenticated frontend consumes the run SSE stream with cursor-based
 reconnection and refreshes authoritative run status after each event. Workers
 emit queue, provider-call, source-verification and report-ready milestones;

@@ -76,7 +76,7 @@ passes; real-provider and PostgreSQL checks remain outstanding.
 - [ ] Add verification of source reachability, relevance, recency, contradictions, and claim support.
 - [ ] Add opportunity analysis consuming verified findings and approved seller offerings.
 - [ ] Let a lead agent request targeted follow-up research for important gaps, subject to budgets.
-- [ ] Add deterministic coverage checks; never require an agent to fabricate a field.
+- [x] Add deterministic coverage checks; never require an agent to fabricate a field.
 - [ ] Compare single-agent versus hybrid execution on the same fixtures.
 
 **Exit criteria:** comparable or better evidence and opportunity quality than Phase 1, with inspectable delegation and controlled costs.

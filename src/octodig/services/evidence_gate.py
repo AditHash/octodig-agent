@@ -3,7 +3,12 @@
 from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
-from ..report_contract import ClaimClassification, ResearchReport, VerificationStatus
+from ..report_contract import (
+    ClaimClassification,
+    ResearchReport,
+    SectionStatus,
+    VerificationStatus,
+)
 from .source_fetch import SourceFetchError, fetch_public_text
 
 
@@ -47,6 +52,32 @@ def verify_report_evidence(report: ResearchReport, *, max_sources: int = 6) -> N
             report.gaps.append(gap)
             report.sections[claim.section].gaps.append(gap)
     claims = {claim.id: claim for claim in report.claims}
+    for section_key, section in report.sections.items():
+        if section.status != SectionStatus.COMPLETE:
+            continue
+        section_claims = [claims[claim_id] for claim_id in section.claim_ids]
+        supported_claims = [
+            claim
+            for claim in section_claims
+            if claim.verification_status == VerificationStatus.SUPPORTED
+        ]
+        unsupported_claims = [
+            claim
+            for claim in section_claims
+            if claim.verification_status == VerificationStatus.UNSUPPORTED
+        ]
+        if not supported_claims:
+            section.status = SectionStatus.INSUFFICIENT_EVIDENCE
+            gap = "Section cannot be complete without a supported verified claim."
+        elif unsupported_claims:
+            section.status = SectionStatus.PARTIAL
+            gap = "Section has verified claims that could not be supported by retrieved evidence."
+        else:
+            continue
+        if gap not in section.gaps:
+            section.gaps.append(gap)
+        if gap not in report.gaps:
+            report.gaps.append(f"{section_key}: {gap}")
     for opportunity in report.opportunities:
         if opportunity.need_kind == ClaimClassification.VERIFIED and (
             not opportunity.supporting_claim_ids or any(
