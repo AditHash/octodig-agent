@@ -128,6 +128,10 @@ claim in that section survived source verification. It downgrades those
 sections to `insufficient_evidence`, or to `partial` when verified support is
 mixed, and records the reason as a visible gap.
 
+Saved reports record scrubbed, counted provider search and application source
+verification actions alongside token usage, duration, reservations, and estimated
+cost. No search arguments, raw prompts, or provider credentials are retained.
+
 The authenticated frontend consumes the run SSE stream with cursor-based
 reconnection and refreshes authoritative run status after each event. Workers
 emit queue, provider-call, source-verification and report-ready milestones;

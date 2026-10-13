@@ -21,6 +21,7 @@ export function ReportView({ report, token }: { report: ResearchReport; token: s
     {error && <p role="alert" className="error">{error}</p>}
     <p>Estimated spend: {metadata?.estimated_cost_usd ? `$${metadata.estimated_cost_usd}` : "Unknown"} · Reserved: {metadata?.reserved_cost_usd ? `$${metadata.reserved_cost_usd}` : "Unknown"}</p>
     <p>{metadata?.model_calls ?? "Unknown"} model calls · {metadata?.input_tokens ?? "Unknown"} input tokens · {metadata?.output_tokens ?? "Unknown"} output tokens · {metadata?.search_calls ?? "Unknown"} searches{metadata?.duration_ms != null ? ` · ${(metadata.duration_ms / 1000).toFixed(1)} seconds` : ""}</p>
+    {!!metadata?.tool_actions?.length && <p>Recorded actions: {metadata.tool_actions.map(action => `${action.provider}:${action.name} (${action.calls})`).join(" · ")}</p>}
     {metadata?.delegates_used && <p>Research specialists: {metadata.delegates_used.join(", ") || "none"}</p>}
     {!!report.gaps?.length && <section><h3>Gaps and limitations</h3><ul>{report.gaps.map((gap, i) => <li key={i}>{gap}</li>)}</ul></section>}
     <nav className="section-nav" aria-label="Report sections">{Object.keys(report.sections ?? {}).map(key => <a key={key} href={`#section-${key}`}>{key.replaceAll("_", " ")}</a>)}</nav>

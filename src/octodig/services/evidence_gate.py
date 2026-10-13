@@ -1,5 +1,6 @@
 """Application-owned verification; model labels never establish claim support."""
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
@@ -12,9 +13,16 @@ from ..report_contract import (
 from .source_fetch import SourceFetchError, fetch_public_text
 
 
-def verify_report_evidence(report: ResearchReport, *, max_sources: int = 6) -> None:
+@dataclass(frozen=True)
+class VerificationSummary:
+    attempted_sources: int
+    retrieved_sources: int
+
+
+def verify_report_evidence(report: ResearchReport, *, max_sources: int = 6) -> VerificationSummary:
     documents = {}
     destinations = {}
+    attempted_sources = min(len(report.sources), max_sources)
     for source in report.sources[:max_sources]:
         try:
             final_url, text = fetch_public_text(str(source.url))
@@ -87,3 +95,4 @@ def verify_report_evidence(report: ResearchReport, *, max_sources: int = 6) -> N
         ):
             opportunity.need_kind = ClaimClassification.HYPOTHESIS
             opportunity.gaps.append("Need is not established by verified supporting evidence.")
+    return VerificationSummary(attempted_sources=attempted_sources, retrieved_sources=len(documents))

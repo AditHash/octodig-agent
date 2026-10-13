@@ -61,7 +61,7 @@ Track methodology in [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md).
 - [x] Store research findings separately from the final generated narrative.
 - [x] Validate twelve section placeholders and explicit missing-data statuses.
 - [x] Stream progress and save Markdown + structured JSON.
-- [ ] Record timing, tool actions, input/output/reasoning tokens and estimated provider cost.
+- [x] Record timing, tool actions, input/output/reasoning tokens and estimated provider cost.
 
 **Exit criteria:** repeatable hosted frontend/API/worker run with real source URLs,
 sensible factuality safeguards, and no fabricated unknown fields. Offline acceptance

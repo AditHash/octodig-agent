@@ -125,6 +125,14 @@ class ReportTarget(BaseModel):
     identity_status: str = Field(pattern=r"^(resolved|ambiguous|unresolved)$")
 
 
+class ToolAction(BaseModel):
+    """A counted, scrubbed action performed during a research run."""
+
+    name: str = Field(pattern=r"^[a-z0-9_:-]+$", max_length=80)
+    provider: str = Field(pattern=r"^[a-z0-9_:-]+$", max_length=80)
+    calls: int = Field(ge=0)
+
+
 class ReportMetadata(BaseModel):
     duration_ms: int | None = Field(default=None, ge=0)
     input_tokens: int | None = Field(default=None, ge=0)
@@ -132,6 +140,7 @@ class ReportMetadata(BaseModel):
     reasoning_tokens: int | None = Field(default=None, ge=0)
     search_calls: int | None = Field(default=None, ge=0)
     model_calls: int | None = Field(default=None, ge=0)
+    tool_actions: list[ToolAction] = Field(default_factory=list)
     delegates_used: list[str] | None = None
     reserved_cost_usd: str | None = None
     estimated_cost_usd: str | None = None

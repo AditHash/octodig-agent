@@ -83,6 +83,8 @@ Never label an LLM's unverified output verified solely because it includes a cit
     "duration_ms": null,
     "input_tokens": null,
     "output_tokens": null,
+    "reasoning_tokens": null,
+    "tool_actions": [],
     "estimated_cost_usd": null
   }
 }

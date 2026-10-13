@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 from sqlalchemy import select
 
 from ..models import ResearchEvent, ResearchRun, RunStatus, SellerOffering, TargetAccount
-from ..report_contract import ResearchReport, SECTION_KEYS, Source, empty_report
+from ..report_contract import ResearchReport, SECTION_KEYS, Source, ToolAction, empty_report
 from ..settings import get_settings
 from .budget import BudgetExceededError, ProviderPricing, require_budget
 from .markdown import render_markdown
@@ -36,6 +36,7 @@ class ProviderResult:
     search_calls: int | None = None
     model_calls: int | None = None
     delegates_used: list[str] | None = None
+    tool_actions: list[ToolAction] | None = None
     citations: list["ProviderCitation"] | None = None
 
 
@@ -382,6 +383,7 @@ def _openai_report(run: ResearchRun, target: TargetAccount, offerings: list[Sell
         search_calls=search_calls,
         model_calls=budget.calls,
         delegates_used=delegates_used,
+        tool_actions=[ToolAction(name="web_search", provider="openai", calls=search_calls or 0)],
         citations=_openai_citations(messages),
     )
 
@@ -425,6 +427,7 @@ def _gemini_report(run: ResearchRun, target: TargetAccount, offerings: list[Sell
         search_calls=len(queries) if queries is not None else None,
         model_calls=1,
         delegates_used=[],
+        tool_actions=[ToolAction(name="google_search", provider="gemini", calls=len(queries) if queries is not None else 0)],
         citations=_gemini_citations(grounding),
     )
 
@@ -487,7 +490,7 @@ def execute_research(session, run: ResearchRun, target: TargetAccount) -> None:
         approved_ids = {offering.id for offering in offerings}
         if any(item.offering_id is not None and item.offering_id not in approved_ids for item in report.opportunities):
             raise ResearchProviderError("Report referenced an offering outside the approved workspace catalog")
-        verify_report_evidence(report)
+        verification = verify_report_evidence(report)
         report.metadata.duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
         report.metadata.input_tokens = provider_result.input_tokens
         report.metadata.output_tokens = provider_result.output_tokens
@@ -495,6 +498,10 @@ def execute_research(session, run: ResearchRun, target: TargetAccount) -> None:
         report.metadata.search_calls = provider_result.search_calls
         report.metadata.model_calls = provider_result.model_calls
         report.metadata.delegates_used = provider_result.delegates_used
+        report.metadata.tool_actions = list(provider_result.tool_actions or [])
+        report.metadata.tool_actions.append(ToolAction(
+            name="public_source_verification", provider="octodig", calls=verification.attempted_sources,
+        ))
         report.metadata.reserved_cost_usd = str(reserved_cost)
         if provider_result.input_tokens is not None and provider_result.output_tokens is not None and provider_result.search_calls is not None:
             report.metadata.estimated_cost_usd = str(

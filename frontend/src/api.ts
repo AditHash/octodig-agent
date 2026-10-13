@@ -18,6 +18,7 @@ export type ResearchReport = {
     reasoning_tokens?: number;
     search_calls?: number;
     model_calls?: number;
+    tool_actions?: { name: string; provider: string; calls: number }[];
     delegates_used?: string[];
     duration_ms?: number;
   };
