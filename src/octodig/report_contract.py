@@ -62,6 +62,8 @@ class Source(BaseModel):
     @field_validator("url")
     @classmethod
     def require_public_https_url(cls, value: HttpUrl) -> HttpUrl:
+        if value.username or value.password:
+            raise ValueError("evidence sources must not contain credentials")
         if value.scheme != "https":
             raise ValueError("evidence sources must use HTTPS")
         host = value.host
@@ -123,12 +125,28 @@ class ReportTarget(BaseModel):
     identity_status: str = Field(pattern=r"^(resolved|ambiguous|unresolved)$")
 
 
+class ToolAction(BaseModel):
+    """A counted, scrubbed action performed during a research run."""
+
+    name: str = Field(pattern=r"^[a-z0-9_:-]+$", max_length=80)
+    provider: str = Field(pattern=r"^[a-z0-9_:-]+$", max_length=80)
+    calls: int = Field(ge=0)
+
+
 class ReportMetadata(BaseModel):
+    report_version: int | None = Field(default=None, ge=1)
+    generated_at: datetime | None = None
+    source_accessed_at: datetime | None = None
+    fresh_until: datetime | None = None
+    freshness_status: str | None = Field(default=None, pattern=r"^(fresh|stale)$")
     duration_ms: int | None = Field(default=None, ge=0)
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
     reasoning_tokens: int | None = Field(default=None, ge=0)
     search_calls: int | None = Field(default=None, ge=0)
+    model_calls: int | None = Field(default=None, ge=0)
+    tool_actions: list[ToolAction] = Field(default_factory=list)
+    delegates_used: list[str] | None = None
     reserved_cost_usd: str | None = None
     estimated_cost_usd: str | None = None
 

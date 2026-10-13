@@ -16,3 +16,10 @@ def test_openai_usage_collects_final_token_usage_and_search_calls() -> None:
 
 def test_openai_usage_leaves_unknown_usage_explicit() -> None:
     assert _openai_usage([SimpleNamespace(usage_metadata=None, tool_calls=[])]) == (None, None, None, 0)
+
+
+def test_usage_sums_all_calls_and_preserves_zero_tokens():
+    messages = [SimpleNamespace(usage_metadata={"input_tokens": 100, "output_tokens": 0}, tool_calls=[], content=[]),
+                SimpleNamespace(usage_metadata={"input_tokens": 200, "output_tokens": 10}, tool_calls=[],
+                                content=[{"type": "server_tool_call", "name": "web_search"}])]
+    assert _openai_usage(messages) == (300, 10, None, 1)

@@ -1,6 +1,6 @@
 # OctoDig Implementation Plan
 
-**Status:** proposed roadmap  
+**Status:** implementation in progress; release gates in [docs/VERIFICATION.md](docs/VERIFICATION.md)
 **Goal:** move from a documented concept to a dependable, evidence-backed hybrid multi-agent research platform without losing the twelve report sections already established in SalesDig V2.
 
 ## What counts as success
@@ -55,38 +55,40 @@ Track methodology in [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md).
 ## Phase 1 — Hosted application foundation
 
 - [x] Initialize the actual application package, environment-based settings, FastAPI transport, React workspace shell, and external-PostgreSQL deployment scaffolding.
-- [ ] Create a single Deep Agent with a narrowly scoped research prompt and approved search tools.
-- [ ] Accept company name, optional official website, seller offerings, and research depth.
-- [ ] Capture provider citation annotations and original source metadata.
-- [ ] Store research findings separately from the final generated narrative.
+- [x] Create a single Deep Agent with a narrowly scoped research prompt and approved search tools.
+- [x] Accept company name, optional official website, seller offerings, and research depth.
+- [x] Capture provider citation annotations and original source metadata.
+- [x] Store research findings separately from the final generated narrative.
 - [x] Validate twelve section placeholders and explicit missing-data statuses.
-- [ ] Stream progress/text locally and save Markdown + structured JSON.
-- [ ] Record timing, tool actions, input/output/reasoning tokens and estimated provider cost.
+- [x] Stream progress and save Markdown + structured JSON.
+- [x] Record timing, tool actions, input/output/reasoning tokens and estimated provider cost.
 
-**Exit criteria:** repeatable end-to-end CLI run with real source URLs, sensible factuality safeguards, and no fabricated unknown fields.
+**Exit criteria:** repeatable hosted frontend/API/worker run with real source URLs,
+sensible factuality safeguards, and no fabricated unknown fields. Offline acceptance
+passes; real-provider and PostgreSQL checks remain outstanding.
 
 ## Phase 2 — Hybrid multi-agent intelligence
 
-- [ ] First use native Deep Agents `subagents=` delegation; establish when delegation improves research quality or efficiency.
+- [x] First use native Deep Agents `subagents=` delegation; establish when delegation improves research quality or efficiency.
 - [ ] **Only if needed**, introduce a custom LangGraph `StateGraph` for deterministic stages, durable replay, checkpointed branching or recovery; document the concrete requirement.
-- [ ] Add specialist research tasks for company/market, people/signals, and technology.
+- [x] Add specialist research tasks for company/market, people/signals, and technology.
 - [ ] Permit parallel independent research; merge normalized findings via a shared evidence store.
 - [ ] Add verification of source reachability, relevance, recency, contradictions, and claim support.
 - [ ] Add opportunity analysis consuming verified findings and approved seller offerings.
 - [ ] Let a lead agent request targeted follow-up research for important gaps, subject to budgets.
-- [ ] Add deterministic coverage checks; never require an agent to fabricate a field.
+- [x] Add deterministic coverage checks; never require an agent to fabricate a field.
 - [ ] Compare single-agent versus hybrid execution on the same fixtures.
 
 **Exit criteria:** comparable or better evidence and opportunity quality than Phase 1, with inspectable delegation and controlled costs.
 
 ## Phase 3 — FastAPI and durable jobs
 
-- [ ] Expose validated research start, status, event-stream and report endpoints.
-- [ ] Separate long-running jobs from request processes using a durable worker mechanism.
-- [ ] Persist run events; support SSE reconnect using event IDs/cursors.
+- [x] Expose validated research start, status, event-stream and report endpoints.
+- [x] Separate long-running jobs from request processes using a durable worker mechanism.
+- [x] Persist run events; support SSE reconnect using event IDs/cursors.
 - [ ] Implement cancellation, bounded retries, timeout handling, idempotency, and explicit failure states.
-- [ ] Add authentication and workspace-level authorization before multi-user deployment.
-- [ ] Expose health endpoints and structured operational logs.
+- [x] Add authentication and workspace-level authorization before multi-user deployment.
+- [x] Expose health endpoints and structured operational logs.
 
 **Exit criteria:** clients can start research, reconnect to progress, and retrieve a final result after leaving the page.
 
@@ -96,7 +98,7 @@ Track methodology in [MODEL_BENCHMARK.md](MODEL_BENCHMARK.md).
 - [ ] Add LangGraph checkpointers for supported recovery and resumability.
 - [ ] Add pgvector only where retrieval evaluations show a clear need.
 - [ ] Support cited follow-up questions over a stored company's evidence.
-- [ ] Track report version, source access date, and research freshness.
+- [x] Track report version, source access date, and research freshness.
 
 **Exit criteria:** research remains durable, auditable, and reproducible enough for later comparison.
 

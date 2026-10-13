@@ -1,25 +1,33 @@
-# Proposed FastAPI Contract
+# FastAPI Contract
 
-**Status:** future design. **None of these endpoints are implemented yet.**
+**Status:** implemented hosted API contract. Prefix: `/api/v1`.
 
-Prefix: /api/v1. OpenAPI paths, authentication strategy, and database schema will be finalized during Phase 3.
+All application endpoints except health checks require a bearer access token and
+enforce the caller's workspace boundary.
 
 ## Research lifecycle
 
 | Method | Path | Expected behavior |
 |---|---|---|
-| POST | /research | Validate company and seller context; create durable run |
-| GET | /research/{run_id} | Status, progress summary, timestamps, gaps |
-| GET | /research/{run_id}/events | SSE progress and report-token stream |
-| GET | /research/{run_id}/report | Validated JSON report or pending/error state |
-| POST | /research/{run_id}/cancel | Request cancellation of active work |
-| GET | /health | Liveness/health indication |
+| POST | /targets/{target_id}/research | Validate request; create/reuse a durable run |
+| GET | /runs | Workspace-scoped saved run history |
+| GET | /runs/{run_id} | Current status, provider, mode, attempt count and error code |
+| GET | /runs/{run_id}/events | Reconnectable SSE progress stream |
+| GET | /runs/{run_id}/report | Validated report JSON after persistence |
+| GET | /runs/{run_id}/report.md | Rendered Markdown after persistence |
+| POST | /runs/{run_id}/cancel | Cancel queued work or request active cancellation |
+| GET | /health/live | Process liveness |
+| GET | /health/ready | Database and production-migration readiness |
 
 Later:
 - POST /chat — grounded questions over saved research with citations
 - GET /companies/{company_id}/history — stored report revisions
 
 ## Start research — illustrative request
+
+`GET /api/v1/runs?limit=50&offset=0` returns workspace-scoped saved run history.
+`GET /api/v1/me` returns the authenticated user's workspace profile and role.
+The frontend restores history after reload and can reopen status and stored reports.
 
 The hosted endpoint is `POST /api/v1/targets/{target_id}/research`. Send a
 client-generated `Idempotency-Key` header for every user action that may be
@@ -28,16 +36,9 @@ with different input returns HTTP 409 and never starts another paid run.
 
 ~~~json
 {
-  "company_name": "Example Company",
-  "website": "https://example.com",
+  "provider": "openai",
   "mode": "standard",
-  "seller_offerings": [
-    {
-      "id": "offering_ai_support",
-      "name": "Support automation",
-      "description": "Automate supported customer support workflows"
-    }
-  ]
+  "max_cost_usd": "0.0500"
 }
 ~~~
 
@@ -45,28 +46,35 @@ Return HTTP 202 with generated run ID, status and URLs for status/events/report.
 
 ## Run status
 
-Suggested states: **queued**, **running**, **completed**, **completed_partial**, **failed**, **cancel_requested**, **cancelled**.
+States: **queued**, **researching**, **normalizing**, **matching**,
+**rendering**, **completed**, **completed_partial**, **failed**,
+**cancel_requested**, **cancelled**, and **budget_exceeded**.
 
 Partial completion means all twelve report keys are represented but some have incomplete/no evidence. It is not the same as success with validated claims in every category.
 
 ## SSE event protocol
 
-Each event should have stable event ID, timestamp, run ID, type and JSON data. Planned events:
+Each event has a stable ID, type and JSON metadata. The stream accepts the
+`after` cursor to resume after a delivered event. The frontend uses `fetch` with
+the bearer token because browser `EventSource` cannot attach an Authorization
+header. If a reverse proxy closes a stream, the frontend reconnects with that
+cursor and refreshes run status from the durable API.
 
+Current events include:
+
+- run.queued
 - run.started
-- research.planned
-- agent.started
-- source.discovered
-- claim.recorded
-- research.gap_detected
-- research.follow_up
-- report.delta
+- run.reclaimed
+- budget.reserved
+- research.provider_call_started
+- research.evidence_verification_started
 - report.ready
-- run.completed
+- run.partial
 - run.failed
+- run.cancel_requested
 - run.cancelled
 
-Never expose internal model chain-of-thought, raw credentials, or encrypted reasoning chunks over SSE. Streaming is for user-visible progress and content, not a substitute for durable checkpoints. Support reconnect through Last-Event-ID or an explicit cursor.
+Never expose internal model chain-of-thought, raw credentials, or encrypted reasoning chunks over SSE. Streaming is for user-visible progress, not a substitute for durable checkpoints.
 
 ## Safety and multi-tenancy
 
@@ -74,7 +82,9 @@ Authorize workspace ownership on **every** run, event, artifact and company look
 
 ## Final report
 
-GET /research/{run_id}/report returns a validated versioned envelope per [REPORT_CONTRACT.md](REPORT_CONTRACT.md). Clients render from structured sections and evidence IDs rather than scraping markdown to recover citations.
+`GET /runs/{run_id}/report` returns a validated versioned envelope per
+[REPORT_CONTRACT.md](REPORT_CONTRACT.md). Clients render structured sections and
+evidence IDs rather than scraping Markdown to recover citations.
 
 ## Error model
 

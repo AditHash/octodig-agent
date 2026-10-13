@@ -5,7 +5,18 @@
 .panel-form textarea { min-height: 80px; resize: vertical; }
 .notice { max-width: 650px; padding: 10px 12px; border-left: 4px solid #1f6a50; background: #e8f1ea; }
 .helper { margin: 0; color: #536158; font-size: .9rem; }
+.app-shell nav button { background: transparent; text-align: left; color: #dbe8e1; }
+.app-shell nav button.active { background: #285745; color: white; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.section-nav { display: flex !important; flex-wrap: wrap; gap: 10px; margin: 24px 0; }
+.section-nav a { color: #17583f !important; background: #e8f1ea; padding: 8px; }
+.claim { border-left: 3px solid #a7afa7; padding: 12px 16px; margin: 16px 0; }
+.badge { display: inline-block; font-size: .85rem; background: #e8f1ea; padding: 4px 8px; border-radius: 4px; }
+.badge.inferred { background: #f7edcf; }.badge.hypothesis { background: #eee6f2; }
+.report-panel section { scroll-margin-top: 20px; padding-top: 12px; }
+button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #e2a23b; outline-offset: 3px; }
 .run-panel, .report-panel { max-width: 850px; margin-bottom: 24px; padding: 20px 24px; border: 1px solid #d9ddd2; border-radius: 10px; background: #fffefa; }
 .run-panel { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .run-panel div { display: grid; gap: 5px; }.run-panel strong { text-transform: capitalize; font-size: 1.15rem; }.run-panel span, .report-panel li span { color: #536158; font-size: .9rem; }
 .secondary { background: #536158; }.report-panel h2, .report-panel h3 { font-family: Georgia, serif; }.report-panel ul { display: grid; gap: 10px; padding-left: 20px; }.report-panel li { display: grid; gap: 3px; }.report-panel a { color: #17583f; }
+.catalog-panel { max-width: 850px; margin: 32px 0; padding-top: 28px; border-top: 1px solid #cdd3c9; }.section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }.section-heading h2 { margin: 4px 0; font-family: Georgia, serif; }.offering-list { list-style: none; padding: 0; }.offering-list li { display: grid; gap: 5px; padding: 14px 0; border-bottom: 1px solid #d9ddd2; }.offering-list p { margin: 0; }.check { display: flex !important; align-items: center; gap: 8px; }

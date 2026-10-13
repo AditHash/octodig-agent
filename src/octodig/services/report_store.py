@@ -1,12 +1,14 @@
 """Persist a validated report with its normalized evidence lineage."""
 
 import hashlib
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ..models import ClaimEvidence, ResearchClaim, ResearchRun, ResearchSource, StoredReport
+from ..models import ClaimEvidence, ResearchClaim, ResearchRun, ResearchSource, StoredReport, TargetAccount
 from ..report_contract import ResearchReport
+from ..settings import get_settings
 
 
 def storage_id(run_id: str, kind: str, report_id: str) -> str:
@@ -20,6 +22,21 @@ def save_report(session: Session, run: ResearchRun, report: ResearchReport, mark
         raise ValueError("report run_id does not match persistence target")
     if session.scalar(select(StoredReport.id).where(StoredReport.run_id == run.id)) is not None:
         raise ValueError("a report already exists for this run")
+    # Serializing per-account version allocation makes report history stable when
+    # several runs for the same target finish at the same time.
+    account = session.scalar(select(TargetAccount).where(TargetAccount.id == run.account_id).with_for_update())
+    if account is None:
+        raise ValueError("report target no longer exists")
+    latest = session.scalar(select(func.max(StoredReport.report_version)).where(
+        StoredReport.account_id == run.account_id,
+    ))
+    report_version = (latest or 0) + 1
+    generated_at = datetime.now(UTC)
+    source_accessed_at = max((source.retrieved_at for source in report.sources), default=None)
+    report.metadata.report_version = report_version
+    report.metadata.generated_at = generated_at
+    report.metadata.source_accessed_at = source_accessed_at
+    report.metadata.fresh_until = generated_at + timedelta(days=get_settings().report_freshness_days)
     for source in report.sources:
         session.add(ResearchSource(
             id=storage_id(run.id, "source", source.id), workspace_id=run.workspace_id, account_id=run.account_id, run_id=run.id,
@@ -41,6 +58,7 @@ def save_report(session: Session, run: ResearchRun, report: ResearchReport, mark
             ))
     stored = StoredReport(
         workspace_id=run.workspace_id, account_id=run.account_id, run_id=run.id,
+        report_version=report_version, generated_at=generated_at,
         schema_version=report.schema_version, payload=report.model_dump(mode="json"), markdown=markdown,
     )
     session.add(stored)

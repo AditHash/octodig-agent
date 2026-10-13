@@ -18,6 +18,15 @@ def render_markdown(report: ResearchReport) -> str:
         f"Mode: {report.mode}",
         "",
     ]
+    if report.metadata.model_calls is not None:
+        lines.extend([f"Model calls: {report.metadata.model_calls}", ""])
+    if report.metadata.delegates_used is not None:
+        lines.extend([f"Research specialists: {', '.join(report.metadata.delegates_used) or 'none'}", ""])
+    if report.metadata.tool_actions:
+        actions = ", ".join(
+            f"{action.provider}:{action.name} ({action.calls})" for action in report.metadata.tool_actions
+        )
+        lines.extend([f"Tool actions: {actions}", ""])
     if report.metadata.estimated_cost_usd is not None:
         lines.extend([f"Estimated provider cost: ${report.metadata.estimated_cost_usd}", ""])
     for key in SECTION_KEYS:

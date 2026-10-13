@@ -1,6 +1,9 @@
 """Offline application-foundation tests; no database or paid provider needed."""
 
 from decimal import Decimal
+from types import SimpleNamespace
+
+import jwt
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,7 +11,7 @@ from fastapi.testclient import TestClient
 from octodig.api import app, database_ready, slugify
 from octodig.models import RunStatus, WorkspaceRole
 from octodig.schemas import ResearchStartRequest
-from octodig.security import decode_access_token, hash_password, issue_access_token, verify_password
+from octodig.security import decode_access_token, hash_password, verify_password
 from octodig.settings import Settings
 
 
@@ -63,7 +66,22 @@ def test_production_settings_reject_unsafe_defaults() -> None:
 def test_production_settings_accept_secure_secret_and_origin() -> None:
     settings = Settings(
         environment="production",
-        jwt_secret="a-long-non-default-secret",
+        jwt_secret="a-long-non-default-secret-with-at-least-32-bytes",
         cors_origins=["https://app.example.com"],
     )
     assert settings.environment == "production"
+
+
+def test_tokens_without_expiration_are_rejected(monkeypatch):
+    settings = Settings(_env_file=None, jwt_secret="offline-test-secret-with-at-least-32-bytes")
+    monkeypatch.setattr("octodig.security.get_settings", lambda: settings)
+    token = jwt.encode({"sub": "user"}, settings.jwt_secret.get_secret_value(), algorithm="HS256")
+    with pytest.raises(jwt.MissingRequiredClaimError):
+        decode_access_token(token)
+
+
+@pytest.mark.parametrize("revision", [None, "0001_initial"])
+def test_production_readiness_rejects_outdated_schema(monkeypatch, revision):
+    monkeypatch.setattr("octodig.api.settings", SimpleNamespace(environment="production"))
+    session = SimpleNamespace(execute=lambda _: None, scalar=lambda _: revision)
+    assert database_ready(session) is False

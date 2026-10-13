@@ -1,6 +1,8 @@
 # OctoDig Frontend References
 
-This folder holds user-supplied UI/design reference documents and frontend-scoped guidance. **There is no frontend application here yet.** These Markdown files are inputs for future design work, not proof that a UI has been built.
+This folder contains the React/Vite application plus user-supplied UI/design
+references. The application supports workspace authentication, targets, research
+history, seller offerings, evidence reports and Markdown/JSON exports.
 
 ## Source files (preserved)
 
@@ -18,6 +20,11 @@ This folder holds user-supplied UI/design reference documents and frontend-scope
 
 ## Development status
 
-No React, Next.js, package.json, component library, or app screens have been committed by adding these references. Create those only as part of a frontend implementation milestone.
+Run `npm ci` and `npm run dev` for development; `npm run build` checks TypeScript
+and builds production assets. Set `VITE_API_URL` to the API origin when building.
+For offline browser acceptance, install Chromium with `npx playwright install chromium`
+and run `npm run test:e2e`. This starts an isolated API/worker fixture; it never
+uses the operator database or paid providers. See
+[verification limits](../docs/VERIFICATION.md) before deployment.
 
 See [AGENTS.md](AGENTS.md) for future contributors' rules.

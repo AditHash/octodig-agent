@@ -2,36 +2,59 @@
 
 from functools import lru_cache
 from decimal import Decimal
+from typing import Annotated, Literal
 
-from pydantic import AnyHttpUrl, Field, SecretStr, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices, AliasGenerator, AnyHttpUrl, Field, SecretStr, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", extra="ignore", populate_by_name=True,
+        alias_generator=AliasGenerator(validation_alias=lambda name: AliasChoices(
+            f"OCTODIG_{name.upper()}", name.upper()
+        )),
+    )
 
     database_url: str = "postgresql+psycopg://octodig:octodig@localhost:5432/octodig"
+    database_connect_timeout_seconds: int = Field(default=5, ge=1, le=30)
+    database_pool_timeout_seconds: int = Field(default=10, ge=1, le=60)
     environment: str = "development"
     jwt_secret: SecretStr = SecretStr("development-only-change-me")
-    jwt_algorithm: str = "HS256"
+    jwt_algorithm: Literal["HS256"] = "HS256"
     access_token_minutes: int = Field(default=60, ge=5, le=1440)
-    cors_origins: list[AnyHttpUrl] = Field(default_factory=lambda: ["http://localhost:5173"])
+    cors_origins: Annotated[list[AnyHttpUrl], NoDecode] = Field(default_factory=lambda: ["http://localhost:5173"])
     run_lease_seconds: int = Field(default=300, ge=30, le=3600)
     run_max_attempts: int = Field(default=3, ge=1, le=10)
     worker_poll_seconds: float = Field(default=2.0, ge=0.2, le=60)
+    auth_login_per_minute: int = Field(default=60, ge=1, le=1000)
+    auth_register_per_hour: int = Field(default=10, ge=1, le=100)
+    research_submissions_per_minute: int = Field(default=20, ge=1, le=1000)
     openai_api_key: SecretStr | None = None
     google_api_key: SecretStr | None = None
     gpt_model: str = "openai:gpt-5-nano"
     gemini_model: str = "gemini-2.5-flash-lite"
-    openai_input_usd_per_million: Decimal | None = None
-    openai_output_usd_per_million: Decimal | None = None
-    openai_search_call_usd: Decimal | None = None
-    gemini_input_usd_per_million: Decimal | None = None
-    gemini_output_usd_per_million: Decimal | None = None
-    gemini_search_call_usd: Decimal | None = None
+    openai_input_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    openai_output_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    openai_search_call_usd: Decimal | None = Field(default=None, ge=0)
+    gemini_input_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    gemini_output_usd_per_million: Decimal | None = Field(default=None, ge=0)
+    gemini_search_call_usd: Decimal | None = Field(default=None, ge=0)
     research_max_input_tokens: int = Field(default=20_000, ge=1, le=1_000_000)
     research_max_output_tokens: int = Field(default=4_000, ge=1, le=100_000)
     research_max_search_calls: int = Field(default=3, ge=0, le=50)
+    provider_timeout_seconds: int = Field(default=120, ge=5, le=240)
+    report_freshness_days: int = Field(default=30, ge=1, le=365)
+
+    @field_validator(
+        "openai_api_key", "google_api_key", "openai_input_usd_per_million",
+        "openai_output_usd_per_million", "openai_search_call_usd",
+        "gemini_input_usd_per_million", "gemini_output_usd_per_million",
+        "gemini_search_call_usd", mode="before",
+    )
+    @classmethod
+    def blank_optional_configuration(cls, value: object) -> object:
+        return None if value == "" else value
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -44,10 +67,12 @@ class Settings(BaseSettings):
     def validate_production_safety(self) -> "Settings":
         if self.environment.lower() != "production":
             return self
-        if self.jwt_secret.get_secret_value() == "development-only-change-me":
-            raise ValueError("JWT_SECRET must be configured for production")
+        if len(self.jwt_secret.get_secret_value().encode()) < 32:
+            raise ValueError("JWT_SECRET must contain at least 32 bytes for production")
         if any(origin.host in {"localhost", "127.0.0.1"} for origin in self.cors_origins):
             raise ValueError("OCTODIG_CORS_ORIGINS must not include local origins in production")
+        if any(origin.scheme != "https" for origin in self.cors_origins):
+            raise ValueError("OCTODIG_CORS_ORIGINS must use HTTPS in production")
         return self
 
 

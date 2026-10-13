@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum, ForeignKey, JSON, String, Text, UniqueConstraint, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, JSON, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -126,6 +126,14 @@ class ResearchEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class RequestQuota(Base):
+    """Shared attempt counters; opaque keys contain no raw IPs or email addresses."""
+    __tablename__ = "request_quotas"
+    bucket_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    attempts: Mapped[int] = mapped_column(default=1)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
 class ResearchSource(Base):
     __tablename__ = "research_sources"
     __table_args__ = (UniqueConstraint("run_id", "canonical_url", name="uq_source_run_url"),)
@@ -163,10 +171,13 @@ class ClaimEvidence(Base):
 
 class StoredReport(Timestamped, Base):
     __tablename__ = "reports"
+    __table_args__ = (UniqueConstraint("account_id", "report_version", name="uq_report_account_version"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
     account_id: Mapped[str] = mapped_column(ForeignKey("target_accounts.id", ondelete="CASCADE"), index=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), unique=True, index=True)
+    report_version: Mapped[int] = mapped_column(Integer)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     schema_version: Mapped[str] = mapped_column(String(20))
     payload: Mapped[dict] = mapped_column(JSON)
     markdown: Mapped[str | None] = mapped_column(Text)
