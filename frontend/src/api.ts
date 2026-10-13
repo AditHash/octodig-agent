@@ -21,9 +21,14 @@ export type ResearchReport = {
     tool_actions?: { name: string; provider: string; calls: number }[];
     delegates_used?: string[];
     duration_ms?: number;
+    report_version?: number;
+    generated_at?: string;
+    source_accessed_at?: string;
+    fresh_until?: string;
+    freshness_status?: "fresh" | "stale";
   };
   gaps?: string[];
-  sources?: { id: string; title?: string; url: string; publisher?: string }[];
+  sources?: { id: string; title?: string; url: string; publisher?: string; retrieved_at?: string }[];
   sections?: Record<string, { status: string; gaps: string[]; claim_ids: string[] }>;
 };
 

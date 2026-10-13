@@ -81,6 +81,11 @@ Never label an LLM's unverified output verified solely because it includes a cit
   "gaps": [],
   "metadata": {
     "duration_ms": null,
+    "report_version": 1,
+    "generated_at": "2026-10-09T00:00:00Z",
+    "source_accessed_at": "2026-10-09T00:00:00Z",
+    "fresh_until": "2026-11-08T00:00:00Z",
+    "freshness_status": "fresh",
     "input_tokens": null,
     "output_tokens": null,
     "reasoning_tokens": null,
@@ -103,6 +108,12 @@ Each source should record:
 - De-duplication key and provenance (tool/provider)
 
 Sources must not be invented, even when the final Markdown looks plausible. Source URLs or annotations are not proof the claimed fact is present on the page.
+
+`report_version` is a monotonic per-target history number allocated by the
+database when a report is saved. `generated_at` records report creation and
+`source_accessed_at` records the latest successful source retrieval. The API
+evaluates `freshness_status` when a report is read using `fresh_until`; it does
+not silently refresh or alter the saved findings.
 
 ## Opportunity contract
 

@@ -425,6 +425,20 @@ def _sse(event: ResearchEvent) -> str:
     return f"id: {event.id}\nevent: {event.event_type}\ndata: {json.dumps(event.data, separators=(',', ':'))}\n\n"
 
 
+def report_payload(stored: StoredReport) -> dict:
+    """Return saved report data with freshness evaluated at read time."""
+    payload = dict(stored.payload)
+    metadata = dict(payload.get("metadata") or {})
+    fresh_until = metadata.get("fresh_until")
+    try:
+        deadline = datetime.fromisoformat(str(fresh_until).replace("Z", "+00:00"))
+        metadata["freshness_status"] = "fresh" if time_now_utc() <= deadline else "stale"
+    except (TypeError, ValueError):
+        metadata["freshness_status"] = "stale"
+    payload["metadata"] = metadata
+    return payload
+
+
 @app.get("/api/v1/runs/{run_id}/events")
 def stream_run_events(
     run_id: str,
@@ -467,7 +481,7 @@ def read_report(
     )
     if report is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-    return report.payload
+    return report_payload(report)
 
 
 @app.get("/api/v1/runs/{run_id}/report.md", response_class=PlainTextResponse)

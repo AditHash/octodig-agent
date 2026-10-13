@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     research_max_output_tokens: int = Field(default=4_000, ge=1, le=100_000)
     research_max_search_calls: int = Field(default=3, ge=0, le=50)
     provider_timeout_seconds: int = Field(default=120, ge=5, le=240)
+    report_freshness_days: int = Field(default=30, ge=1, le=365)
 
     @field_validator(
         "openai_api_key", "google_api_key", "openai_input_usd_per_million",

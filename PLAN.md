@@ -98,7 +98,7 @@ passes; real-provider and PostgreSQL checks remain outstanding.
 - [ ] Add LangGraph checkpointers for supported recovery and resumability.
 - [ ] Add pgvector only where retrieval evaluations show a clear need.
 - [ ] Support cited follow-up questions over a stored company's evidence.
-- [ ] Track report version, source access date, and research freshness.
+- [x] Track report version, source access date, and research freshness.
 
 **Exit criteria:** research remains durable, auditable, and reproducible enough for later comparison.
 

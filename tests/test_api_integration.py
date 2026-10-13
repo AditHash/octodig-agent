@@ -141,6 +141,9 @@ def test_worker_report_is_retrievable_only_by_owning_workspace(client, monkeypat
     assert report.status_code == 200
     assert len(report.json()["sections"]) == 12
     assert report.json()["metadata"]["input_tokens"] == 100
+    assert report.json()["metadata"]["report_version"] == 1
+    assert report.json()["metadata"]["generated_at"]
+    assert report.json()["metadata"]["freshness_status"] == "fresh"
     assert report.json()["metadata"]["tool_actions"] == [
         {"name": "public_source_verification", "provider": "octodig", "calls": 0},
     ]

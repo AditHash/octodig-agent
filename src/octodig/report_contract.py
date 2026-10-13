@@ -134,6 +134,11 @@ class ToolAction(BaseModel):
 
 
 class ReportMetadata(BaseModel):
+    report_version: int | None = Field(default=None, ge=1)
+    generated_at: datetime | None = None
+    source_accessed_at: datetime | None = None
+    fresh_until: datetime | None = None
+    freshness_status: str | None = Field(default=None, pattern=r"^(fresh|stale)$")
     duration_ms: int | None = Field(default=None, ge=0)
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)

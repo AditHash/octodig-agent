@@ -20,6 +20,7 @@ export function ReportView({ report, token }: { report: ResearchReport; token: s
     <div className="actions"><button onClick={() => download(JSON.stringify(report, null, 2), `octodig-${report.run_id}.json`, "application/json")}>Download JSON</button><button onClick={exportMarkdown}>Download Markdown</button></div>
     {error && <p role="alert" className="error">{error}</p>}
     <p>Estimated spend: {metadata?.estimated_cost_usd ? `$${metadata.estimated_cost_usd}` : "Unknown"} · Reserved: {metadata?.reserved_cost_usd ? `$${metadata.reserved_cost_usd}` : "Unknown"}</p>
+    <p>Report version: {metadata?.report_version ?? "Unknown"} · Generated: {metadata?.generated_at ? new Date(metadata.generated_at).toLocaleString() : "Unknown"} · Freshness: {metadata?.freshness_status ?? "Unknown"}</p>
     <p>{metadata?.model_calls ?? "Unknown"} model calls · {metadata?.input_tokens ?? "Unknown"} input tokens · {metadata?.output_tokens ?? "Unknown"} output tokens · {metadata?.search_calls ?? "Unknown"} searches{metadata?.duration_ms != null ? ` · ${(metadata.duration_ms / 1000).toFixed(1)} seconds` : ""}</p>
     {!!metadata?.tool_actions?.length && <p>Recorded actions: {metadata.tool_actions.map(action => `${action.provider}:${action.name} (${action.calls})`).join(" · ")}</p>}
     {metadata?.delegates_used && <p>Research specialists: {metadata.delegates_used.join(", ") || "none"}</p>}
@@ -39,6 +40,6 @@ export function ReportView({ report, token }: { report: ResearchReport; token: s
       <p>Supporting findings: {item.supporting_claim_ids.map(id => report.claims.find(claim => claim.id === id)?.statement).filter(Boolean).join("; ") || "None recorded"}</p>
       <ul>{item.gaps.map((gap, i) => <li key={i}>Gap: {gap}</li>)}</ul><h4>Discovery questions</h4><ul>{item.discovery_questions.map((question, i) => <li key={i}>{question}</li>)}</ul>
     </div>) : <p>No qualified opportunities recorded.</p>}</section>
-    <section><h3>Source appendix</h3><ul>{report.sources?.map(source => <li key={source.id}><a href={source.url} rel="noreferrer" target="_blank">{source.title || source.url}</a>{source.publisher && <span>{source.publisher}</span>}</li>)}</ul></section>
+    <section><h3>Source appendix</h3><ul>{report.sources?.map(source => <li key={source.id}><a href={source.url} rel="noreferrer" target="_blank">{source.title || source.url}</a>{source.publisher && <span>{source.publisher}</span>}{source.retrieved_at && <span> · accessed {new Date(source.retrieved_at).toLocaleDateString()}</span>}</li>)}</ul></section>
   </article>;
 }
