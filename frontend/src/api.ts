@@ -16,6 +16,8 @@ export type ResearchReport = {
     output_tokens?: number;
     reasoning_tokens?: number;
     search_calls?: number;
+    model_calls?: number;
+    delegates_used?: string[];
     duration_ms?: number;
   };
   gaps?: string[];

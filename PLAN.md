@@ -69,9 +69,9 @@ passes; real-provider and PostgreSQL checks remain outstanding.
 
 ## Phase 2 — Hybrid multi-agent intelligence
 
-- [ ] First use native Deep Agents `subagents=` delegation; establish when delegation improves research quality or efficiency.
+- [x] First use native Deep Agents `subagents=` delegation; establish when delegation improves research quality or efficiency.
 - [ ] **Only if needed**, introduce a custom LangGraph `StateGraph` for deterministic stages, durable replay, checkpointed branching or recovery; document the concrete requirement.
-- [ ] Add specialist research tasks for company/market, people/signals, and technology.
+- [x] Add specialist research tasks for company/market, people/signals, and technology.
 - [ ] Permit parallel independent research; merge normalized findings via a shared evidence store.
 - [ ] Add verification of source reachability, relevance, recency, contradictions, and claim support.
 - [ ] Add opportunity analysis consuming verified findings and approved seller offerings.

@@ -125,7 +125,7 @@ def test_worker_report_is_retrievable_only_by_owning_workspace(client, monkeypat
                          json={"provider": "openai", "max_cost_usd": "1"})
     run_id = queued.json()["id"]
     assert queued.json()["attempts"] == 0
-    monkeypatch.setattr("octodig.services.research._pricing", lambda _: ProviderPricing(
+    monkeypatch.setattr("octodig.services.research._pricing", lambda *_: ProviderPricing(
         Decimal("1"), Decimal("2"), Decimal("0"), 1000, 500, 0
     ))
     monkeypatch.setattr("octodig.services.research._openai_report", lambda run, target, offerings: ProviderResult(
@@ -178,7 +178,7 @@ def test_crash_reservations_prevent_retry_spending_full_budget(client, monkeypat
     target_id = client.post("/api/v1/targets", headers=headers, json={"name": "Example"}).json()["id"]
     run_id = client.post(f"/api/v1/targets/{target_id}/research", headers=headers,
                          json={"provider": "openai", "max_cost_usd": "0.05"}).json()["id"]
-    monkeypatch.setattr("octodig.services.research._pricing", lambda _: ProviderPricing(
+    monkeypatch.setattr("octodig.services.research._pricing", lambda *_: ProviderPricing(
         Decimal("10"), Decimal("20"), Decimal("0"), 1000, 1000, 0
     ))
     monkeypatch.setattr("octodig.services.research._openai_report", lambda *_: pytest.fail("No paid call allowed"))

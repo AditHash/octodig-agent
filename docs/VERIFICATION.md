@@ -79,7 +79,12 @@ The worker now persists budget reservations before spending, subtracts earlier
 reservations on recovery, and uses a PostgreSQL session advisory lock to prevent
 concurrent paid execution of a leased run. OpenAI requests set an output ceiling,
 hosted-tool call ceiling, timeout and zero retries; middleware bounds model calls
-and input size and removes filesystem/delegation tools. Gemini sets output and
+and input size and removes filesystem/delegation tools. Deep OpenAI mode now
+offers company/market, people/signals, and technology specialists through native
+Deep Agents delegation. A single atomic budget is shared by the lead and
+delegates, and the report records aggregate model-call usage. The generic default
+delegate is explicitly restricted to the same search-only tools and one-call
+limit. Gemini sets output and
 input ceilings and timeout with retries disabled. Its native-search query cap and
 billing equivalence still require provider-specific work.
 

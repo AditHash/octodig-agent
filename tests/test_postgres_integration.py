@@ -134,7 +134,7 @@ with engine.connect() as connection, Session(bind=connection) as session:
 
 def test_cancellation_during_verification_cannot_be_overwritten(postgres_engine, monkeypatch):
     run_id = seed(postgres_engine)[0]
-    monkeypatch.setattr("octodig.services.research._pricing", lambda _: ProviderPricing(
+    monkeypatch.setattr("octodig.services.research._pricing", lambda *_: ProviderPricing(
         Decimal("1"), Decimal("2"), Decimal("0"), 1000, 500, 0))
     monkeypatch.setattr("octodig.services.research._openai_report", lambda run, target, _: ProviderResult(
         empty_report(run.id, target.name, target.website, run.mode)))

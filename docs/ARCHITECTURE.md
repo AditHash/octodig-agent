@@ -87,6 +87,16 @@ Object/artifact storage (optional large reports)
 
 The lead agent may choose additional research, but cannot skip required output coverage or bypass budgets. Parallelism is used only for independent tasks, not as a requirement to run every specialist every time.
 
+The current OpenAI deep mode exposes company/market, people/signals, and technology
+specialists through native Deep Agents delegation. The general-purpose default
+delegate is explicitly configured with the same restricted web-search tools and
+one-call middleware. Lead and delegates share one thread-safe run budget for
+model calls, estimated input tokens, output-token reservations, and hosted search
+calls. Standard mode remains a single model call. Gemini remains single-call
+because its native grounding query cap is not yet enforceable through the current
+adapter. Delegation availability is implemented; comparative evidence that it
+improves report quality remains a benchmark gate.
+
 ## Conceptual specialists
 
 - **Company/market:** company identity, overview, customers, business model, offerings and competitors.

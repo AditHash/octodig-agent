@@ -131,6 +131,8 @@ class ReportMetadata(BaseModel):
     output_tokens: int | None = Field(default=None, ge=0)
     reasoning_tokens: int | None = Field(default=None, ge=0)
     search_calls: int | None = Field(default=None, ge=0)
+    model_calls: int | None = Field(default=None, ge=0)
+    delegates_used: list[str] | None = None
     reserved_cost_usd: str | None = None
     estimated_cost_usd: str | None = None
 
